@@ -30,23 +30,25 @@ function GameSession({ onRestart }) {
   const [slotUpgradeCount, setSlotUpgradeCount] = useState(0);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
-  const direction = usePlayerDirection();
+  const [isPaused, setIsPaused] = useState(false);
+  const isGameActive = !isPaused && !isGameOver;
+  const direction = usePlayerDirection(isGameActive);
   const party = usePartyMovement(direction, {
     followerIds,
     classById,
-    active: !isGameOver,
+    active: isGameActive,
   });
   const pursuit = useEnemyPursuit(
     party,
-    !isGameOver,
+    isGameActive,
     () => createWaveEnemies(1),
   );
-  const waveInfo = useWaveManager(pursuit.spawnEnemies, !isGameOver);
+  const waveInfo = useWaveManager(pursuit.spawnEnemies, isGameActive);
   const enemies = pursuit.enemies;
   const combat = usePartyCombat(
     party,
     enemies,
-    !isGameOver,
+    isGameActive,
     pursuit.applySlow,
     pursuit.applyKnockback,
   );
@@ -78,10 +80,28 @@ function GameSession({ onRestart }) {
         }
       }
     },
-    !isGameOver,
+    isGameActive,
     waveInfo.wave,
   );
   const slotUpgradeCost = getSlotUpgradeCost(slotUpgradeCount);
+
+  useEffect(() => {
+    if (isGameOver) {
+      return undefined;
+    }
+
+    const handlePauseKeyDown = (event) => {
+      if (event.key.toLowerCase() !== 'p' || event.repeat) {
+        return;
+      }
+
+      event.preventDefault();
+      setIsPaused((paused) => !paused);
+    };
+
+    window.addEventListener('keydown', handlePauseKeyDown);
+    return () => window.removeEventListener('keydown', handlePauseKeyDown);
+  }, [isGameOver]);
 
   const handleSlotUpgrade = () => {
     const purchase = purchaseSlotUpgrade({
@@ -161,10 +181,27 @@ function GameSession({ onRestart }) {
         <span>
           Fila: {combat.party.followers.length + 1}/{maxPartySlots}
         </span>
-        <button type="button" onClick={() => setIsShopOpen(true)}>
+        <button
+          type="button"
+          aria-pressed={isPaused}
+          onClick={() => setIsPaused((paused) => !paused)}
+        >
+          {isPaused ? 'Continuar' : 'Pausar'}
+        </button>
+        <button
+          type="button"
+          disabled={isPaused || isGameOver}
+          onClick={() => setIsShopOpen(true)}
+        >
           Loja
         </button>
       </section>
+      {isPaused && !isGameOver && (
+        <section className="pause-overlay" aria-live="polite">
+          <h1>Jogo pausado</h1>
+          <p>Pressione P ou Continuar para retomar.</p>
+        </section>
+      )}
       {isShopOpen && (
         <section
           className="shop-panel"

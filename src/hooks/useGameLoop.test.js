@@ -54,6 +54,35 @@ test('cancels the scheduled animation frame on unmount', () => {
   jest.restoreAllMocks();
 });
 
+test('stops scheduling frames after the loop is disabled', () => {
+  let frameCallback;
+  const requestAnimationFrame = jest
+    .spyOn(window, 'requestAnimationFrame')
+    .mockImplementation((callback) => {
+      frameCallback = callback;
+      return 12;
+    });
+  const cancelAnimationFrame = jest
+    .spyOn(window, 'cancelAnimationFrame')
+    .mockImplementation(() => {});
+  const onFrame = jest.fn();
+  const { rerender } = render(
+    <GameLoopHarness onFrame={onFrame} enabled />,
+  );
+
+  act(() => frameCallback(0));
+  const scheduledCallback = frameCallback;
+  rerender(<GameLoopHarness onFrame={onFrame} enabled={false} />);
+  const requestCountAfterDisable = requestAnimationFrame.mock.calls.length;
+
+  act(() => scheduledCallback(20));
+
+  expect(cancelAnimationFrame).toHaveBeenCalledWith(12);
+  expect(requestAnimationFrame).toHaveBeenCalledTimes(requestCountAfterDisable);
+  expect(onFrame).toHaveBeenCalledTimes(1);
+  jest.restoreAllMocks();
+});
+
 test('does not schedule frames while disabled', () => {
   const requestAnimationFrame = jest.spyOn(window, 'requestAnimationFrame');
   const cancelAnimationFrame = jest.spyOn(window, 'cancelAnimationFrame');

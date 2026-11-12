@@ -13,8 +13,13 @@ export function useGameLoop(onFrame, enabled = true) {
 
     let animationFrameId;
     let lastFrameTimestamp = null;
+    let isRunning = true;
 
     const loop = (timestamp) => {
+      if (!isRunning) {
+        return;
+      }
+
       if (lastFrameTimestamp === null) {
         lastFrameTimestamp = timestamp;
         onFrameRef.current(0);
@@ -33,6 +38,7 @@ export function useGameLoop(onFrame, enabled = true) {
     animationFrameId = window.requestAnimationFrame(loop);
 
     return () => {
+      isRunning = false;
       window.cancelAnimationFrame(animationFrameId);
     };
   }, [enabled]);

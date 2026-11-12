@@ -42,6 +42,40 @@ test('updates the game direction from keyboard input', () => {
   expect(canvas).toHaveAttribute('data-direction-y', '-1');
 });
 
+test('pauses and resumes with P or the HUD button', () => {
+  render(<App />);
+
+  const pauseButton = screen.getByRole('button', { name: 'Pausar' });
+  fireEvent.keyDown(window, { key: 'p' });
+
+  expect(screen.getByText('Jogo pausado')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Continuar' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(screen.getByRole('button', { name: 'Loja' })).toBeDisabled();
+
+  fireEvent.keyDown(window, { key: 'ArrowUp' });
+  expect(screen.getByLabelText('Área do jogo')).toHaveAttribute(
+    'data-direction-y',
+    '0',
+  );
+
+  fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+  expect(screen.queryByText('Jogo pausado')).not.toBeInTheDocument();
+  expect(pauseButton).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('pauses and resumes from the HUD button', () => {
+  render(<App />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Pausar' }));
+  expect(screen.getByText('Jogo pausado')).toBeInTheDocument();
+
+  fireEvent.keyDown(window, { key: 'P' });
+  expect(screen.queryByText('Jogo pausado')).not.toBeInTheDocument();
+});
+
 test('renders party members on the canvas', () => {
   render(<App />);
 

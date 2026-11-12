@@ -13,11 +13,15 @@ const KEY_DIRECTIONS = {
   d: { x: 1, y: 0 },
 };
 
-export function usePlayerDirection() {
+export function usePlayerDirection(active = true) {
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const directionRef = useRef(direction);
 
   useEffect(() => {
+    if (!active) {
+      return undefined;
+    }
+
     const handleKeyDown = (event) => {
       const nextDirection = KEY_DIRECTIONS[event.key] || KEY_DIRECTIONS[event.key.toLowerCase()];
 
@@ -46,7 +50,7 @@ export function usePlayerDirection() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [active]);
 
   return direction;
 }
