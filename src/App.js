@@ -133,6 +133,7 @@ function GameSession({ onRestart }) {
       combat.coinDrops,
       combat.coinPickupEffects,
       recruits,
+      combat.particles,
     );
   }, [combat, recruits]);
 

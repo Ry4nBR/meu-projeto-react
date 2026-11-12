@@ -26,6 +26,7 @@ import {
   PICKUP_EFFECT_DURATION,
 } from '../game/coins';
 import { checkCollision } from '../game/physics';
+import { advanceParticles, createParticleBurst } from '../game/particles';
 import { useGameLoop } from './useGameLoop';
 
 const INITIAL_HP = 100;
@@ -216,6 +217,7 @@ export function usePartyCombat(
   const [coins, setCoins] = useState(0);
   const [coinsCollected, setCoinsCollected] = useState(0);
   const [coinPickupEffects, setCoinPickupEffects] = useState([]);
+  const [particles, setParticles] = useState([]);
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
   const skeletonsRef = useRef([]);
@@ -230,6 +232,17 @@ export function usePartyCombat(
   const nextShockwaveId = useRef(0);
   const nextSkeletonId = useRef(0);
   const nextCoinEffectId = useRef(0);
+  const nextParticleBurstId = useRef(0);
+  const emitParticles = (x, y, color) => {
+    const burst = createParticleBurst(
+      `particle-${nextParticleBurstId.current}`,
+      x,
+      y,
+      color,
+    );
+    nextParticleBurstId.current += 1;
+    setParticles((currentParticles) => [...currentParticles, ...burst]);
+  };
 
   const spendCoins = useCallback(
     (amount) => {
@@ -250,6 +263,12 @@ export function usePartyCombat(
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
       return;
+    }
+
+    if (particles.length > 0) {
+      setParticles((currentParticles) =>
+        advanceParticles(currentParticles, deltaTime),
+      );
     }
 
     const collection = collectCoinDrops(
@@ -282,6 +301,9 @@ export function usePartyCombat(
           timeRemaining: PICKUP_EFFECT_DURATION,
         })),
       ]);
+      collection.collected.forEach((coin) =>
+        emitParticles(coin.x, coin.y, '#ffd700'),
+      );
     }
 
     if (coinPickupEffects.length > 0) {
@@ -360,10 +382,14 @@ export function usePartyCombat(
         ({ id }) => id === skeletonId,
       );
       if (skeleton) {
+        const enemy = enemies.find(({ id }) => id === enemyId);
+        if (enemy) {
+          emitParticles(enemy.x, enemy.y, '#d8c6ff');
+        }
         setHealth((currentHealth) =>
           applySkeletonDamage(
             currentHealth,
-            enemies.find(({ id }) => id === enemyId),
+            enemy,
             skeleton.atk,
           ),
         );
@@ -382,6 +408,13 @@ export function usePartyCombat(
     }
     if (canAttack) {
       warriorTimer.current %= WARRIOR_CONFIG.cooldown;
+      livingEnemies
+        .filter(
+          (enemy) =>
+            Math.hypot(enemy.x - party.leader.x, enemy.y - party.leader.y) <=
+            WARRIOR_CONFIG.range,
+        )
+        .forEach((enemy) => emitParticles(enemy.x, enemy.y, '#ffd700'));
     }
     if (canCast) {
       iceWitchTimer.current %= ICE_WITCH_CONFIG.cooldown;
@@ -441,6 +474,7 @@ export function usePartyCombat(
     if (canHeal && druid) {
       const { target } = healMostWounded(health, party);
       if (target) {
+        emitParticles(target.x, target.y, '#38ef7d');
         setHealingEffects((currentEffects) => [
           ...currentEffects,
           {
@@ -489,6 +523,7 @@ export function usePartyCombat(
       hits.forEach(({ enemyId, origin }) => {
         const enemy = livingEnemies.find(({ id }) => id === enemyId);
         if (enemy) {
+          emitParticles(enemy.x, enemy.y, '#b7f7ff');
           setHealth((currentHealth) =>
             applyWindShockwaveDamage(currentHealth, enemy),
           );
@@ -535,6 +570,7 @@ export function usePartyCombat(
       hits.forEach(({ enemyId }) => {
         const enemy = livingEnemies.find(({ id }) => id === enemyId);
         if (enemy) {
+          emitParticles(enemy.x, enemy.y, '#9be7ff');
           setHealth((currentHealth) =>
             applyIceProjectileDamage(currentHealth, enemy),
           );
@@ -594,6 +630,7 @@ export function usePartyCombat(
     addCoins,
     spendCoins,
     coinPickupEffects,
+    particles,
     skeletons: skeletons
       .map((skeleton) => ({
         ...skeleton,

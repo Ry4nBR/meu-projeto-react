@@ -194,3 +194,27 @@ test('draws the pickup animation around a collected coin', () => {
   );
   expect(context.strokeStyle).toBe('#fff2a8');
 });
+
+test('draws fading impact particles on the canvas', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [], [], [], [], [], [
+    { x: 40, y: 50, color: '#ff7772', timeRemaining: 0.2 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    3,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.fillStyle).toBe('#ff7772');
+  expect(context.globalAlpha).toBe(1);
+});

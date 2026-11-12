@@ -197,6 +197,8 @@ test('fires the Ice Witch ability every 1.5 seconds and applies the slow on impa
   expect(applySlow).toHaveBeenCalledWith('enemy-1', 3);
   expect(combat.enemies[0].hp).toBe(45);
   expect(combat.projectiles).toHaveLength(0);
+  expect(combat.particles).toHaveLength(8);
+  expect(combat.particles[0].color).toBe('#9be7ff');
 });
 
 test('Druid heals the lowest-health ally every two seconds and emits a green aura', () => {
@@ -442,5 +444,8 @@ test('collects dropped coins, updates the wallet, and emits a pickup effect', ()
   expect(combat.coinDrops).toHaveLength(0);
   expect(combat.coins).toBeGreaterThanOrEqual(1);
   expect(combat.coins).toBeLessThanOrEqual(5);
+  expect(combat.coinsCollected).toBe(combat.coins);
   expect(combat.coinPickupEffects.length).toBeGreaterThan(0);
+  expect(combat.particles).toHaveLength(8);
+  expect(combat.particles[0].color).toBe('#ffd700');
 });

@@ -1,3 +1,5 @@
+import { PARTICLE_LIFETIME } from './particles';
+
 const LEADER_COLOR = '#ffd700';
 const FOLLOWER_COLOR = '#4682b4';
 const LEADER_RADIUS = 12;
@@ -35,6 +37,7 @@ export function drawParty(
   coins = [],
   coinPickupEffects = [],
   recruits = [],
+  particles = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -181,6 +184,17 @@ export function drawParty(
     context.font = '10px sans-serif';
     context.textAlign = 'center';
     context.fillText(recruit.name, recruit.x, recruit.y - 16);
+  });
+
+  particles.forEach((particle) => {
+    context.globalAlpha = Math.max(
+      0,
+      Math.min(1, particle.timeRemaining / PARTICLE_LIFETIME),
+    );
+    context.fillStyle = particle.color;
+    context.beginPath();
+    context.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+    context.fill();
   });
   context.globalAlpha = 1;
 }
