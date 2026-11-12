@@ -1,6 +1,7 @@
 import './App.css';
 import { useEffect, useRef } from 'react';
 import { drawParty } from './game/renderParty';
+import { useEnemyPursuit } from './hooks/useEnemyPursuit';
 import { usePartyMovement } from './hooks/usePartyMovement';
 import { usePlayerDirection } from './hooks/usePlayerDirection';
 
@@ -8,6 +9,7 @@ function App() {
   const canvasRef = useRef(null);
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction);
+  const enemies = useEnemyPursuit(party);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -17,8 +19,8 @@ function App() {
       throw new Error('O navegador não conseguiu criar o contexto 2D do canvas.');
     }
 
-    drawParty(context, party, canvas.width, canvas.height);
-  }, [party]);
+    drawParty(context, party, canvas.width, canvas.height, enemies);
+  }, [party, enemies]);
 
   return (
     <main className="App">
@@ -32,6 +34,7 @@ function App() {
         data-leader-x={party.leader.x}
         data-leader-y={party.leader.y}
         data-follower-count={party.followers.length}
+        data-enemy-count={enemies.length}
         aria-label="Área do jogo"
       />
     </main>

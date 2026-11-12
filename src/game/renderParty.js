@@ -2,9 +2,16 @@ const LEADER_COLOR = '#ffd700';
 const FOLLOWER_COLOR = '#4682b4';
 const LEADER_RADIUS = 12;
 const FOLLOWER_RADIUS = 9;
+const ENEMY_RADIUS = 10;
 const DIRECTION_LENGTH = 24;
 
-export function drawParty(context, party, width = 800, height = 600) {
+export function drawParty(
+  context,
+  party,
+  width = 800,
+  height = 600,
+  enemies = [],
+) {
   context.clearRect(0, 0, width, height);
 
   party.followers.forEach((follower) => {
@@ -34,4 +41,11 @@ export function drawParty(context, party, width = 800, height = 600) {
     party.leader.y + party.direction.y * DIRECTION_LENGTH,
   );
   context.stroke();
+
+  enemies.forEach((enemy) => {
+    context.fillStyle = '#d9534f';
+    context.beginPath();
+    context.arc(enemy.x, enemy.y, ENEMY_RADIUS, 0, Math.PI * 2);
+    context.fill();
+  });
 }
