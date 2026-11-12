@@ -5,8 +5,8 @@ export const ICE_WITCH_CONFIG = {
   atk: 5,
   cooldown: 1.5,
   projectileSpeed: 240,
-  slowFactor: 0.5,
-  slowDuration: 3,
+  slowFactor: 0.0,
+  slowDuration: 2.5,
 };
 
 export function createIceWitch() {

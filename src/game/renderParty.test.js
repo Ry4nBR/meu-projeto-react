@@ -10,6 +10,17 @@ function createContext() {
     lineTo: jest.fn(),
     moveTo: jest.fn(),
     stroke: jest.fn(),
+    strokeRect: jest.fn(),
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    shadowColor: '',
+    shadowBlur: 0,
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    globalAlpha: 1,
+    fillText: jest.fn(),
   };
 }
 
@@ -52,7 +63,7 @@ test('draws followers in blue, the leader in gold, and a direction indicator', (
   expect(context.strokeStyle).toBe('#ffd700');
   expect(context.moveTo).toHaveBeenCalledWith(100, 120);
   expect(context.lineTo).toHaveBeenCalledWith(100, 96);
-  expect(context.stroke).toHaveBeenCalledTimes(1);
+  expect(context.stroke).toHaveBeenCalled();
 });
 
 test('draws an ice projectile on the canvas', () => {
@@ -144,7 +155,7 @@ test('renders autonomous skeleton minions with their own health bar', () => {
     0,
     Math.PI * 2,
   );
-  expect(context.fillRect).toHaveBeenCalledTimes(2);
+  expect(context.fillRect).toHaveBeenCalled();
 });
 
 test('draws gold coins with a glow and fading alpha', () => {

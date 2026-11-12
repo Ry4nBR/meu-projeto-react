@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { createWarriorLeader, WARRIOR_CONFIG } from '../game/classes';
+import { createWarriorLeader, WARRIOR_CONFIG, isInMeleeArc } from '../game/classes';
 import {
   advanceIceProjectile,
   createIceProjectile,
@@ -177,7 +177,7 @@ function applyContactDamage(health, party, enemies) {
   return nextHealth;
 }
 
-function applyWarriorAttack(health, leader, enemies) {
+function applyWarriorAttack(health, leader, enemies, direction) {
   let nextHealth = health;
 
   enemies.forEach((enemy) => {
@@ -187,7 +187,7 @@ function applyWarriorAttack(health, leader, enemies) {
     };
     if (
       enemyHealth.hp <= 0 ||
-      Math.hypot(enemy.x - leader.x, enemy.y - leader.y) > WARRIOR_CONFIG.range
+      !isInMeleeArc(leader, direction, enemy)
     ) {
       return;
     }
@@ -462,9 +462,7 @@ export function usePartyCombat(
       warriorTimer.current %= WARRIOR_CONFIG.cooldown;
       livingEnemies
         .filter(
-          (enemy) =>
-            Math.hypot(enemy.x - party.leader.x, enemy.y - party.leader.y) <=
-            WARRIOR_CONFIG.range,
+          (enemy) => isInMeleeArc(party.leader, party.direction, enemy),
         )
         .forEach((enemy) => emitParticles(enemy.x, enemy.y, '#ffd700'));
     }
@@ -516,7 +514,7 @@ export function usePartyCombat(
           );
         }
         if (canAttack) {
-          nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
+          nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies, party.direction);
         }
         if (
           canHeal &&

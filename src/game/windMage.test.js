@@ -6,12 +6,12 @@ import {
   WIND_MAGE_CONFIG,
 } from './windMage';
 
-test('creates the Wind Mage with a three-second shockwave cooldown', () => {
+test('creates the Wind Mage with a 3.5-second shockwave cooldown', () => {
   expect(createWindMage()).toMatchObject({
     id: 'follower-2',
     name: 'Mago de Vento',
     classType: 'wind-mage',
-    cooldown: 3,
+    cooldown: 3.5,
   });
 });
 

@@ -2,7 +2,7 @@ import { createCharacter } from './entities';
 
 export const DRUID_CONFIG = {
   hp: 100,
-  cooldown: 2,
+  cooldown: 4,
   healAmount: 25,
   auraDuration: 0.6,
 };

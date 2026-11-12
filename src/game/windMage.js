@@ -2,7 +2,7 @@ import { createCharacter } from './entities';
 
 export const WIND_MAGE_CONFIG = {
   hp: 100,
-  cooldown: 3,
+  cooldown: 3.5,
   atk: 15,
   radius: 120,
   expansionDuration: 0.5,

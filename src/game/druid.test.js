@@ -1,11 +1,11 @@
 import { createDruid, DRUID_CONFIG, healMostWounded } from './druid';
 
-test('creates a Druid follower with a two-second healing cooldown', () => {
+test('creates a Druid follower with a four-second healing cooldown', () => {
   expect(createDruid()).toMatchObject({
     id: 'follower-1',
     name: 'Druida',
     classType: 'druid',
-    cooldown: 2,
+    cooldown: 4,
   });
   expect(DRUID_CONFIG.healAmount).toBe(25);
 });

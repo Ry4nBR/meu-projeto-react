@@ -55,7 +55,7 @@ test('moves enemies toward the nearest member at constant speed', () => {
   });
 });
 
-test('slows enemy movement by half for the remaining slow duration', () => {
+test('freezes enemy movement completely for the remaining slow duration', () => {
   const enemies = [
     { id: 'e', x: 0, y: 0, speed: 10, slowRemaining: 3 },
   ];
@@ -67,13 +67,13 @@ test('slows enemy movement by half for the remaining slow duration', () => {
   const afterOneSecond = advanceEnemies(enemies, party, 1)[0];
   expect(afterOneSecond).toEqual({
     ...enemies[0],
-    x: 5,
+    x: 0,
     slowRemaining: 2,
   });
 
   expect(advanceEnemies([afterOneSecond], party, 3)[0]).toEqual({
     ...enemies[0],
-    x: 25,
+    x: 10,
     slowRemaining: 0,
   });
 });

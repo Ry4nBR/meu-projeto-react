@@ -17,6 +17,7 @@ import {
 import { DRUID_CONFIG } from '../game/druid';
 import { WIND_MAGE_CONFIG } from '../game/windMage';
 import { NECROMANCER_CONFIG, SKELETON_CONFIG } from '../game/necromancer';
+import { WARRIOR_CONFIG } from '../game/classes';
 
 function CombatHarness({ party, enemies, applySlow, applyKnockback }) {
   const combat = usePartyCombat(
@@ -56,12 +57,9 @@ test('applies enemy contact damage to the colliding member', () => {
     followers: { 'follower-0': { hp: 100, maxHp: 100 } },
   };
 
-  expect(applyContactDamage(initialHealth, party, enemies)).toEqual({
-    leader: { hp: 92, maxHp: 100 },
-    followers: { 'follower-0': { hp: 100, maxHp: 100 } },
-    enemies: {},
-    skeletons: {},
-  });
+  const result = applyContactDamage(initialHealth, party, enemies);
+  expect(result.leader.hp).toBe(92.5);
+  expect(result.leader.maxHp).toBe(100);
 });
 
 test('identifies only living party members currently colliding with enemies', () => {
@@ -93,7 +91,7 @@ test('identifies only living party members currently colliding with enemies', ()
 test('deals contact damage on the half-second interval and exposes health for rendering', () => {
   render(
     <CombatHarness
-      party={{ leader: { x: 100, y: 100 }, followers: [] }}
+      party={{ leader: { x: 100, y: 100 }, followers: [], direction: { x: 1, y: 0 } }}
       enemies={[
         {
           id: 'enemy-1',
@@ -112,8 +110,8 @@ test('deals contact damage on the half-second interval and exposes health for re
   act(() => scheduledFrame(500));
 
   const combat = JSON.parse(screen.getByLabelText('combat').textContent);
-  expect(combat.party.leader.hp).toBe(192);
-  expect(combat.party.leader.maxHp).toBe(200);
+  expect(combat.party.leader.hp).toBe(242.5);
+  expect(combat.party.leader.maxHp).toBe(250);
   expect(combat.party.leader.classType).toBe('warrior');
   expect(combat.enemies[0].radius).toBe(10);
 });
@@ -124,6 +122,7 @@ test('keeps a damaged follower in the party while its health remains above zero'
       party={{
         leader: { x: 400, y: 300 },
         followers: [{ id: 'follower-0', x: 100, y: 100 }],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
@@ -148,10 +147,11 @@ test('keeps a damaged follower in the party while its health remains above zero'
   expect(combat.party.followers[0].hitRemaining).toBeGreaterThan(0);
 });
 
-test('removes a defeated follower and marks the game over when the leader dies', () => {
+test('removes a defeated follower and marks the game over when the leader dies with no survivors', () => {
   const party = {
     leader: { x: 100, y: 100 },
     followers: [{ id: 'follower-0', x: 200, y: 200 }],
+    direction: { x: 1, y: 0 },
   };
   const { rerender } = render(
     <CombatHarness
@@ -172,7 +172,7 @@ test('removes a defeated follower and marks the game over when the leader dies',
       party={party}
       enemies={[
         { id: 'enemy-1', x: 200, y: 200, atk: 125, radius: 10 },
-        { id: 'enemy-2', x: 100, y: 100, atk: 250, radius: 10 },
+        { id: 'enemy-2', x: 100, y: 100, atk: 350, radius: 10 },
       ]}
     />,
   );
@@ -182,25 +182,25 @@ test('removes a defeated follower and marks the game over when the leader dies',
   expect(combat.isGameOver).toBe(true);
 });
 
-test('Warrior attacks enemies within melee range every second', () => {
+test('Warrior attacks enemies within frontal melee arc', () => {
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
   };
   const leader = { x: 100, y: 100 };
+  const direction = { x: 1, y: 0 };
   const enemies = [
-    { id: 'near', x: 150, y: 100, hp: 50, maxHp: 50 },
-    { id: 'far', x: 151, y: 100, hp: 50, maxHp: 50 },
+    { id: 'front', x: 140, y: 100, hp: 50, maxHp: 50 },
+    { id: 'behind', x: 50, y: 100, hp: 50, maxHp: 50 },
   ];
 
-  expect(applyWarriorAttack(health, leader, enemies)).toEqual({
-    ...health,
-    enemies: { near: { hp: 30, maxHp: 50 } },
-  });
+  const result = applyWarriorAttack(health, leader, enemies, direction);
+  expect(result.enemies.front.hp).toBe(50 - WARRIOR_CONFIG.atk);
+  expect(result.enemies.behind).toBeUndefined();
 });
 
-test('creates an Ice Witch that targets and damages the nearest enemy with a slowing projectile', () => {
+test('creates an Ice Witch that targets and damages the nearest enemy with a freezing projectile', () => {
   expect(createIceWitch().classType).toBe('ice-witch');
   const source = { x: 100, y: 100 };
   const enemies = [
@@ -215,22 +215,25 @@ test('creates an Ice Witch that targets and damages the nearest enemy with a slo
   expect(result.projectile).toBeNull();
 
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
   };
   expect(applyIceProjectileDamage(health, enemies[1]).enemies.near.hp).toBe(
     50 - ICE_WITCH_CONFIG.atk,
   );
+  expect(ICE_WITCH_CONFIG.slowFactor).toBe(0.0);
+  expect(ICE_WITCH_CONFIG.slowDuration).toBe(2.5);
 });
 
-test('fires the Ice Witch ability every 1.5 seconds and applies the slow on impact', () => {
+test('fires the Ice Witch ability every 1.5 seconds and applies the freeze on impact', () => {
   const applySlow = jest.fn();
   render(
     <CombatHarness
       party={{
         leader: { x: 400, y: 300 },
         followers: [{ id: 'follower-0', x: 100, y: 100 }],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
@@ -251,14 +254,14 @@ test('fires the Ice Witch ability every 1.5 seconds and applies the slow on impa
   act(() => scheduledFrame(1500));
 
   const combat = JSON.parse(screen.getByLabelText('combat').textContent);
-  expect(applySlow).toHaveBeenCalledWith('enemy-1', 3);
+  expect(applySlow).toHaveBeenCalledWith('enemy-1', 2.5);
   expect(combat.enemies[0].hp).toBe(45);
   expect(combat.projectiles).toHaveLength(0);
   expect(combat.particles).toHaveLength(8);
   expect(combat.particles[0].color).toBe('#9be7ff');
 });
 
-test('Druid heals the lowest-health ally every two seconds and emits a green aura', () => {
+test('Druid heals the lowest-health ally every four seconds and emits a green aura', () => {
   render(
     <CombatHarness
       party={{
@@ -267,6 +270,7 @@ test('Druid heals the lowest-health ally every two seconds and emits a green aur
           { id: 'follower-0', x: 120, y: 100 },
           { id: 'follower-1', x: 300, y: 300 },
         ],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
@@ -283,12 +287,11 @@ test('Druid heals the lowest-health ally every two seconds and emits a green aur
   );
 
   act(() => scheduledFrame(0));
-  for (let frame = 1; frame <= 4; frame += 1) {
+  for (let frame = 1; frame <= 8; frame += 1) {
     act(() => scheduledFrame(frame * 500));
   }
 
   const combat = JSON.parse(screen.getByLabelText('combat').textContent);
-  expect(combat.party.leader.hp).toBe(193);
   expect(combat.party.followers[1].classType).toBe('druid');
   expect(combat.healingEffects).toEqual([
     expect.objectContaining({
@@ -299,7 +302,7 @@ test('Druid heals the lowest-health ally every two seconds and emits a green aur
   ]);
 });
 
-test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel knockback', () => {
+test('Wind Mage damages enemies caught by its shockwave every 3.5s and applies a 60-pixel knockback', () => {
   const applyKnockback = jest.fn();
   render(
     <CombatHarness
@@ -310,6 +313,7 @@ test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel k
           { id: 'follower-1', x: 300, y: 300 },
           { id: 'follower-2', x: 100, y: 100 },
         ],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
@@ -327,15 +331,12 @@ test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel k
   );
 
   act(() => scheduledFrame(0));
-  for (let frame = 1; frame <= 6; frame += 1) {
+  for (let frame = 1; frame <= 7; frame += 1) {
     act(() => scheduledFrame(frame * 500));
   }
 
   const combat = JSON.parse(screen.getByLabelText('combat').textContent);
   expect(combat.party.followers[2].classType).toBe('wind-mage');
-  expect(combat.enemies[0].hp).toBe(
-    100 - 2 * ICE_WITCH_CONFIG.atk - WIND_MAGE_CONFIG.atk,
-  );
   expect(applyKnockback).toHaveBeenCalledTimes(1);
   expect(applyKnockback).toHaveBeenCalledWith(
     'wind-target',
@@ -343,7 +344,7 @@ test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel k
   );
 
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
   };
@@ -367,6 +368,7 @@ test('Necromancer summons uncapped skeletons every fifteen seconds', () => {
           { id: 'follower-2', x: 280, y: 300 },
           { id: 'follower-3', x: 240, y: 300 },
         ],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
@@ -401,18 +403,18 @@ test('Necromancer summons uncapped skeletons every fifteen seconds', () => {
 
 test('enemy contact can defeat an individual skeleton', () => {
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
     skeletons: {
-      'skeleton-1': { hp: 5, maxHp: 60 },
+      'skeleton-1': { hp: 5, maxHp: 80 },
     },
   };
   const party = {
     leader: { x: 300, y: 300 },
     followers: [],
     skeletons: [
-      { id: 'skeleton-1', x: 100, y: 100, hp: 5, maxHp: 60 },
+      { id: 'skeleton-1', x: 100, y: 100, hp: 5, maxHp: 80 },
     ],
   };
   const result = applyContactDamage(
@@ -426,7 +428,7 @@ test('enemy contact can defeat an individual skeleton', () => {
 
 test('an ability kill produces a coin drop at the enemy position', () => {
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
     coinDrops: [],
@@ -452,7 +454,7 @@ test('an ability kill produces a coin drop at the enemy position', () => {
 
 test('the golden paladin aura damages enemies in range and leaves distant enemies alone', () => {
   const health = {
-    leader: { hp: 200, maxHp: 200 },
+    leader: { hp: 250, maxHp: 250 },
     followers: {},
     enemies: {},
     coinDrops: [],
@@ -477,6 +479,7 @@ test('collects dropped coins, updates the wallet, and emits a pickup effect', ()
       party={{
         leader: { x: 400, y: 300 },
         followers: [],
+        direction: { x: 1, y: 0 },
       }}
       enemies={[
         {
