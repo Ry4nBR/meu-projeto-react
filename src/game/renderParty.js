@@ -31,6 +31,7 @@ export function drawParty(
   projectiles = [],
   healingEffects = [],
   shockwaves = [],
+  skeletons = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -107,6 +108,20 @@ export function drawParty(
       Math.PI * 2,
     );
     context.stroke();
+  });
+
+  skeletons.forEach((skeleton) => {
+    context.fillStyle = '#d8c6ff';
+    context.beginPath();
+    context.arc(
+      skeleton.x,
+      skeleton.y,
+      skeleton.radius || 7,
+      0,
+      Math.PI * 2,
+    );
+    context.fill();
+    drawHealthBar(context, skeleton, skeleton.radius || 7);
   });
   context.globalAlpha = 1;
 }

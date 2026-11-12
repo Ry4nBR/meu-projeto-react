@@ -13,6 +13,13 @@ import {
   createWindShockwave,
   WIND_MAGE_CONFIG,
 } from '../game/windMage';
+import {
+  advanceSkeletons,
+  createNecromancer,
+  createSkeleton,
+  NECROMANCER_CONFIG,
+  SKELETON_CONFIG,
+} from '../game/necromancer';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -30,6 +37,7 @@ function createInitialHealth(followers) {
       followers.map(({ id }) => [id, { hp: INITIAL_HP, maxHp: INITIAL_HP }]),
     ),
     enemies: {},
+    skeletons: {},
   };
 }
 
@@ -44,6 +52,13 @@ function applyContactDamage(health, party, enemies) {
       }),
       radius: FOLLOWER_RADIUS,
       id: follower.id,
+    })),
+    ...(party.skeletons || []).map((skeleton) => ({
+      ...skeleton,
+      ...(health.skeletons?.[skeleton.id] || skeleton),
+      radius: SKELETON_CONFIG.radius,
+      id: `skeleton:${skeleton.id}`,
+      skeletonId: skeleton.id,
     })),
   ];
   let nextHealth = health;
@@ -72,6 +87,7 @@ function applyContactDamage(health, party, enemies) {
               ]),
             ),
             enemies: { ...health.enemies },
+            skeletons: { ...(health.skeletons || {}) },
           };
         }
 
@@ -81,6 +97,15 @@ function applyContactDamage(health, party, enemies) {
             nextHealth.leader.hp -
               enemy.atk * (1 - WARRIOR_CONFIG.damageReduction),
           );
+        } else if (member.skeletonId) {
+          const skeletonHealth = nextHealth.skeletons[member.skeletonId] || {
+            hp: SKELETON_CONFIG.hp,
+            maxHp: SKELETON_CONFIG.hp,
+          };
+          nextHealth.skeletons[member.skeletonId] = {
+            ...skeletonHealth,
+            hp: Math.max(0, skeletonHealth.hp - enemy.atk),
+          };
         } else {
           const followerHealth = nextHealth.followers[member.id] || {
             hp: INITIAL_HP,
@@ -165,6 +190,23 @@ function applyWindShockwaveDamage(health, enemy) {
   };
 }
 
+function applySkeletonDamage(health, enemyId, damage) {
+  const skeletonHealth = health.enemies[enemyId] || {
+    hp: 0,
+    maxHp: 0,
+  };
+  return {
+    ...health,
+    enemies: {
+      ...health.enemies,
+      [enemyId]: {
+        ...skeletonHealth,
+        hp: Math.max(0, skeletonHealth.hp - damage),
+      },
+    },
+  };
+}
+
 export function usePartyCombat(
   party,
   enemies,
@@ -178,16 +220,20 @@ export function usePartyCombat(
   const [projectiles, setProjectiles] = useState([]);
   const [healingEffects, setHealingEffects] = useState([]);
   const [shockwaves, setShockwaves] = useState([]);
+  const [skeletons, setSkeletons] = useState([]);
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
+  const skeletonsRef = useRef([]);
   const damageTimer = useRef(0);
   const warriorTimer = useRef(0);
   const iceWitchTimer = useRef(0);
   const druidTimer = useRef(0);
   const windMageTimer = useRef(0);
+  const necromancerTimer = useRef(0);
   const nextProjectileId = useRef(0);
   const nextHealingEffectId = useRef(0);
   const nextShockwaveId = useRef(0);
+  const nextSkeletonId = useRef(0);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -202,6 +248,57 @@ export function usePartyCombat(
     iceWitchTimer.current += deltaTime;
     druidTimer.current += deltaTime;
     windMageTimer.current += deltaTime;
+    const necromancer = party.followers.find(
+      ({ id }) =>
+        id === 'follower-3' && health.followers[id]?.hp !== 0,
+    );
+    if (necromancer) {
+      necromancerTimer.current += deltaTime;
+      while (necromancerTimer.current >= NECROMANCER_CONFIG.cooldown) {
+        necromancerTimer.current -= NECROMANCER_CONFIG.cooldown;
+        const skeleton = createSkeleton(
+          `skeleton-${nextSkeletonId.current}`,
+          necromancer,
+        );
+        nextSkeletonId.current += 1;
+        skeletonsRef.current = [...skeletonsRef.current, skeleton];
+        setHealth((currentHealth) => ({
+          ...currentHealth,
+          skeletons: {
+            ...currentHealth.skeletons,
+            [skeleton.id]: { hp: skeleton.hp, maxHp: skeleton.maxHp },
+          },
+        }));
+      }
+    }
+
+    const activeSkeletons = skeletonsRef.current.filter(
+      (skeleton) =>
+        (health.skeletons?.[skeleton.id]?.hp ?? skeleton.hp) > 0,
+    );
+    const skeletonParty = { ...party, skeletons: activeSkeletons };
+    const skeletonTurn = advanceSkeletons(
+      activeSkeletons,
+      livingEnemies,
+      deltaTime,
+    );
+    skeletonsRef.current = skeletonTurn.skeletons;
+    setSkeletons(skeletonTurn.skeletons);
+    skeletonTurn.hits.forEach(({ enemyId, skeletonId }) => {
+      const skeleton = skeletonTurn.skeletons.find(
+        ({ id }) => id === skeletonId,
+      );
+      if (skeleton) {
+        setHealth((currentHealth) =>
+          applySkeletonDamage(
+            currentHealth,
+            enemyId,
+            skeleton.atk,
+          ),
+        );
+      }
+    });
+
     const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
     const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
     const canCast = iceWitchTimer.current >= ICE_WITCH_CONFIG.cooldown;
@@ -242,7 +339,11 @@ export function usePartyCombat(
       setHealth((currentHealth) => {
         let nextHealth = currentHealth;
         if (canDamage) {
-          nextHealth = applyContactDamage(nextHealth, party, enemies);
+          nextHealth = applyContactDamage(
+            nextHealth,
+            skeletonParty,
+            enemies,
+          );
         }
         if (canAttack) {
           nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
@@ -372,6 +473,7 @@ export function usePartyCombat(
   const iceWitch = createIceWitch();
   const druid = createDruid();
   const windMage = createWindMage();
+  const necromancer = createNecromancer();
   return {
     party: {
       ...party,
@@ -386,6 +488,7 @@ export function usePartyCombat(
           ...(follower.id === iceWitch.id ? iceWitch : {}),
           ...(follower.id === druid.id ? druid : {}),
           ...(follower.id === windMage.id ? windMage : {}),
+          ...(follower.id === necromancer.id ? necromancer : {}),
           ...follower,
           ...(health.followers[follower.id] || {
             hp: INITIAL_HP,
@@ -408,6 +511,15 @@ export function usePartyCombat(
     projectiles,
     healingEffects,
     shockwaves,
+    skeletons: skeletons
+      .map((skeleton) => ({
+        ...skeleton,
+        ...(health.skeletons?.[skeleton.id] || {
+          hp: skeleton.hp,
+          maxHp: skeleton.maxHp,
+        }),
+      }))
+      .filter((skeleton) => skeleton.hp > 0),
     isGameOver: health.leader.hp <= 0,
   };
 }
@@ -415,6 +527,7 @@ export function usePartyCombat(
 export {
   applyContactDamage,
   applyIceProjectileDamage,
+  applySkeletonDamage,
   applyWindShockwaveDamage,
   applyWarriorAttack,
 };

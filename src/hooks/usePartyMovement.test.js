@@ -44,10 +44,11 @@ test('moves the leader at constant speed and follows its position history at fix
 
   expect(party.leader.x).toBeCloseTo(520, 3);
   expect(party.leader.y).toBeCloseTo(300, 3);
-  expect(party.followers).toHaveLength(3);
+  expect(party.followers).toHaveLength(4);
   expect(party.followers[0].x).toBeCloseTo(480, 3);
   expect(party.followers[1].x).toBeCloseTo(440, 3);
   expect(party.followers[2].x).toBeCloseTo(400, 3);
+  expect(party.followers[3].x).toBeCloseTo(360, 3);
   expect(party.followers.every((follower) => follower.y === 300)).toBe(true);
 });
 

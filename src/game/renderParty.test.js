@@ -6,6 +6,7 @@ function createContext() {
     beginPath: jest.fn(),
     clearRect: jest.fn(),
     fill: jest.fn(),
+    fillRect: jest.fn(),
     lineTo: jest.fn(),
     moveTo: jest.fn(),
     stroke: jest.fn(),
@@ -121,4 +122,27 @@ test('draws an expanding Wind Mage shockwave', () => {
   );
   expect(context.strokeStyle).toBe('#b7f7ff');
   expect(context.globalAlpha).toBe(1);
+});
+
+test('renders autonomous skeleton minions with their own health bar', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [], [
+    { id: 'skeleton-1', x: 40, y: 50, hp: 30, maxHp: 60, radius: 7 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    7,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.fillRect).toHaveBeenCalledTimes(2);
 });

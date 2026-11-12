@@ -12,6 +12,7 @@ function App() {
     'follower-0',
     'follower-1',
     'follower-2',
+    'follower-3',
   ]);
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
@@ -57,6 +58,7 @@ function App() {
       combat.projectiles,
       combat.healingEffects,
       combat.shockwaves,
+      combat.skeletons,
     );
   }, [combat]);
 

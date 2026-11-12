@@ -14,6 +14,7 @@ import {
 } from '../game/iceWitch';
 import { DRUID_CONFIG } from '../game/druid';
 import { WIND_MAGE_CONFIG } from '../game/windMage';
+import { NECROMANCER_CONFIG, SKELETON_CONFIG } from '../game/necromancer';
 
 function CombatHarness({ party, enemies, applySlow, applyKnockback }) {
   const combat = usePartyCombat(
@@ -57,6 +58,7 @@ test('applies enemy contact damage to the colliding member', () => {
     leader: { hp: 92, maxHp: 100 },
     followers: { 'follower-0': { hp: 100, maxHp: 100 } },
     enemies: {},
+    skeletons: {},
   });
 });
 
@@ -292,4 +294,72 @@ test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel k
       maxHp: 100,
     }).enemies['wind-target'].hp,
   ).toBe(100 - WIND_MAGE_CONFIG.atk);
+});
+
+test('Necromancer summons uncapped skeletons every fifteen seconds', () => {
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 400, y: 300 },
+        followers: [
+          { id: 'follower-0', x: 360, y: 300 },
+          { id: 'follower-1', x: 320, y: 300 },
+          { id: 'follower-2', x: 280, y: 300 },
+          { id: 'follower-3', x: 240, y: 300 },
+        ],
+      }}
+      enemies={[
+        {
+          id: 'summon-test',
+          x: 700,
+          y: 500,
+          hp: 5000,
+          maxHp: 5000,
+          atk: 0,
+          radius: 10,
+        },
+      ]}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  act(() => scheduledFrame(15000));
+
+  let combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.party.followers[3].classType).toBe('necromancer');
+  expect(combat.skeletons).toHaveLength(1);
+  expect(combat.skeletons[0]).toMatchObject({
+    hp: SKELETON_CONFIG.hp,
+    maxHp: SKELETON_CONFIG.hp,
+  });
+
+  act(() => scheduledFrame(30000));
+  combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.skeletons).toHaveLength(2);
+  expect(NECROMANCER_CONFIG.cooldown).toBe(15);
+});
+
+test('enemy contact can defeat an individual skeleton', () => {
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {},
+    enemies: {},
+    skeletons: {
+      'skeleton-1': { hp: 5, maxHp: 60 },
+    },
+  };
+  const party = {
+    leader: { x: 300, y: 300 },
+    followers: [],
+    skeletons: [
+      { id: 'skeleton-1', x: 100, y: 100, hp: 5, maxHp: 60 },
+    ],
+  };
+  const result = applyContactDamage(
+    health,
+    party,
+    [{ id: 'enemy', x: 100, y: 100, atk: 10, radius: 10 }],
+  );
+
+  expect(result.skeletons['skeleton-1'].hp).toBe(0);
 });

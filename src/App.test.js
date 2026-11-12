@@ -46,7 +46,7 @@ test('renders party members on the canvas', () => {
   render(<App />);
 
   expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 800, 600);
-  expect(canvasContext.arc).toHaveBeenCalledTimes(7);
-  expect(canvasContext.fillRect).toHaveBeenCalledTimes(14);
+  expect(canvasContext.arc).toHaveBeenCalledTimes(8);
+  expect(canvasContext.fillRect).toHaveBeenCalledTimes(16);
   expect(canvasContext.stroke).toHaveBeenCalledTimes(1);
 });
