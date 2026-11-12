@@ -1,7 +1,9 @@
 import {
   collectRecruit,
   createGoldenPaladin,
+  createRareBonusHero,
   createRecruit,
+  RARE_HERO_BONUS_MULTIPLIER,
   RECRUIT_CLASSES,
   shouldSpawnRareRecruit,
 } from './recruits';
@@ -34,6 +36,21 @@ test('creates a rare golden paladin with triple health and a damage aura', () =>
     auraDamage: expect.any(Number),
     isRare: true,
   });
+});
+
+test('provides +30% bonus attributes on rare bonus heroes', () => {
+  expect(RARE_HERO_BONUS_MULTIPLIER).toBe(1.3);
+
+  const paladin = createGoldenPaladin('paladin-test', () => 0.5);
+  expect(paladin.bonusMultiplier).toBe(1.3);
+  expect(paladin.bonusHp).toBe(0.3);
+  expect(paladin.bonusDamage).toBe(0.3);
+
+  const rareHero = createRareBonusHero('rare-1', () => 0.5);
+  expect(rareHero.isRare).toBe(true);
+  expect(rareHero.hp).toBe(130);
+  expect(rareHero.maxHp).toBe(130);
+  expect(rareHero.bonusMultiplier).toBe(1.3);
 });
 
 test('rolls a rare recruit at a 15 percent chance per wave', () => {

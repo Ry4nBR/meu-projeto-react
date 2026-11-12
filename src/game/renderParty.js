@@ -192,6 +192,11 @@ export function drawParty(
     if (recruit.isRare) {
       context.shadowColor = '#fff2a8';
       context.shadowBlur = 22;
+      context.strokeStyle = '#ffd700';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(recruit.x, recruit.y, (recruit.radius || 11) + 4, 0, Math.PI * 2);
+      context.stroke();
     }
     context.beginPath();
     context.arc(recruit.x, recruit.y, recruit.radius || 11, 0, Math.PI * 2);

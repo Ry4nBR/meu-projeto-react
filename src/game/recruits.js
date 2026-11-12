@@ -2,6 +2,7 @@ import { checkCollision } from './physics';
 
 export const RECRUIT_SPAWN_INTERVAL = 20;
 export const RARE_RECRUIT_CHANCE = 0.15;
+export const RARE_HERO_BONUS_MULTIPLIER = 1.3;
 export const RECRUIT_CLASSES = [
   { classType: 'druid', name: 'Druida', color: '#38ef7d' },
   { classType: 'ice-witch', name: 'Bruxa de Gelo', color: '#9be7ff' },
@@ -23,6 +24,24 @@ export function createGoldenPaladin(id, random = Math.random) {
     auraRange: 54,
     auraDamage: 12,
     isRare: true,
+    bonusHp: 0.3,
+    bonusDamage: 0.3,
+    bonusMultiplier: RARE_HERO_BONUS_MULTIPLIER,
+  };
+}
+
+export function createRareBonusHero(id, random = Math.random) {
+  const recruit = createRecruit(id, random);
+  return {
+    ...recruit,
+    name: `★ ${recruit.name} Raro`,
+    color: '#ffd700',
+    isRare: true,
+    hp: Math.round(recruit.hp * RARE_HERO_BONUS_MULTIPLIER),
+    maxHp: Math.round(recruit.maxHp * RARE_HERO_BONUS_MULTIPLIER),
+    bonusHp: 0.3,
+    bonusDamage: 0.3,
+    bonusMultiplier: RARE_HERO_BONUS_MULTIPLIER,
   };
 }
 
