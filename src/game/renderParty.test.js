@@ -74,3 +74,27 @@ test('draws an ice projectile on the canvas', () => {
   );
   expect(context.fillStyle).toBe('#9be7ff');
 });
+
+test('draws a temporary green healing aura', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [
+    { x: 40, y: 50, timeRemaining: 0.3 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    20,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.strokeStyle).toBe('#38ef7d');
+  expect(context.globalAlpha).toBe(1);
+});

@@ -29,6 +29,7 @@ export function drawParty(
   height = 600,
   enemies = [],
   projectiles = [],
+  healingEffects = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -76,4 +77,17 @@ export function drawParty(
     context.arc(projectile.x, projectile.y, 5, 0, Math.PI * 2);
     context.fill();
   });
+
+  healingEffects.forEach((effect) => {
+    context.globalAlpha = Math.max(
+      0,
+      Math.min(1, effect.timeRemaining / 0.6),
+    );
+    context.strokeStyle = '#38ef7d';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(effect.x, effect.y, 20, 0, Math.PI * 2);
+    context.stroke();
+  });
+  context.globalAlpha = 1;
 }

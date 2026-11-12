@@ -11,6 +11,7 @@ import {
   createIceWitch,
   ICE_WITCH_CONFIG,
 } from '../game/iceWitch';
+import { DRUID_CONFIG } from '../game/druid';
 
 function CombatHarness({ party, enemies, applySlow }) {
   const combat = usePartyCombat(party, enemies, true, applySlow);
@@ -185,4 +186,45 @@ test('fires the Ice Witch ability every 1.5 seconds and applies the slow on impa
   expect(applySlow).toHaveBeenCalledWith('enemy-1', 3);
   expect(combat.enemies[0].hp).toBe(45);
   expect(combat.projectiles).toHaveLength(0);
+});
+
+test('Druid heals the lowest-health ally every two seconds and emits a green aura', () => {
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 100, y: 100 },
+        followers: [
+          { id: 'follower-0', x: 120, y: 100 },
+          { id: 'follower-1', x: 300, y: 300 },
+        ],
+      }}
+      enemies={[
+        {
+          id: 'enemy-druid-test',
+          x: 100,
+          y: 100,
+          hp: 500,
+          maxHp: 500,
+          atk: 10,
+          radius: 10,
+        },
+      ]}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  for (let frame = 1; frame <= 4; frame += 1) {
+    act(() => scheduledFrame(frame * 500));
+  }
+
+  const combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.party.leader.hp).toBe(193);
+  expect(combat.party.followers[1].classType).toBe('druid');
+  expect(combat.healingEffects).toEqual([
+    expect.objectContaining({
+      x: 100,
+      y: 100,
+      timeRemaining: DRUID_CONFIG.auraDuration,
+    }),
+  ]);
 });

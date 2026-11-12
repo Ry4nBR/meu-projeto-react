@@ -6,6 +6,7 @@ import {
   createIceWitch,
   ICE_WITCH_CONFIG,
 } from '../game/iceWitch';
+import { createDruid, DRUID_CONFIG, healMostWounded } from '../game/druid';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -151,11 +152,14 @@ export function usePartyCombat(
     createInitialHealth(party.followers),
   );
   const [projectiles, setProjectiles] = useState([]);
+  const [healingEffects, setHealingEffects] = useState([]);
   const projectilesRef = useRef([]);
   const damageTimer = useRef(0);
   const warriorTimer = useRef(0);
   const iceWitchTimer = useRef(0);
+  const druidTimer = useRef(0);
   const nextProjectileId = useRef(0);
+  const nextHealingEffectId = useRef(0);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -168,9 +172,11 @@ export function usePartyCombat(
     damageTimer.current += deltaTime;
     warriorTimer.current += deltaTime;
     iceWitchTimer.current += deltaTime;
+    druidTimer.current += deltaTime;
     const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
     const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
     const canCast = iceWitchTimer.current >= ICE_WITCH_CONFIG.cooldown;
+    const canHeal = druidTimer.current >= DRUID_CONFIG.cooldown;
 
     if (canDamage) {
       damageTimer.current %= DAMAGE_INTERVAL;
@@ -181,8 +187,24 @@ export function usePartyCombat(
     if (canCast) {
       iceWitchTimer.current %= ICE_WITCH_CONFIG.cooldown;
     }
+    if (canHeal) {
+      druidTimer.current %= DRUID_CONFIG.cooldown;
+    }
 
-    if (canDamage || canAttack) {
+    setHealingEffects((currentEffects) => {
+      if (currentEffects.length === 0) {
+        return currentEffects;
+      }
+
+      return currentEffects
+        .map((effect) => ({
+          ...effect,
+          timeRemaining: effect.timeRemaining - deltaTime,
+        }))
+        .filter((effect) => effect.timeRemaining > 0);
+    });
+
+    if (canDamage || canAttack || canHeal) {
       setHealth((currentHealth) => {
         let nextHealth = currentHealth;
         if (canDamage) {
@@ -191,8 +213,38 @@ export function usePartyCombat(
         if (canAttack) {
           nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
         }
+        if (
+          canHeal &&
+          party.followers.some(
+            ({ id }) =>
+              id === 'follower-1' &&
+              currentHealth.followers[id]?.hp !== 0,
+          )
+        ) {
+          nextHealth = healMostWounded(nextHealth, party).health;
+        }
         return nextHealth;
       });
+    }
+
+    const druid = party.followers.find(
+      ({ id }) =>
+        id === 'follower-1' && health.followers[id]?.hp !== 0,
+    );
+    if (canHeal && druid) {
+      const { target } = healMostWounded(health, party);
+      if (target) {
+        setHealingEffects((currentEffects) => [
+          ...currentEffects,
+          {
+            id: `heal-${nextHealingEffectId.current}`,
+            x: target.x,
+            y: target.y,
+            timeRemaining: DRUID_CONFIG.auraDuration,
+          },
+        ]);
+        nextHealingEffectId.current += 1;
+      }
     }
 
     let launchedProjectile = null;
@@ -242,6 +294,7 @@ export function usePartyCombat(
   }, active);
 
   const iceWitch = createIceWitch();
+  const druid = createDruid();
   return {
     party: {
       ...party,
@@ -254,6 +307,7 @@ export function usePartyCombat(
       followers: party.followers
         .map((follower) => ({
           ...(follower.id === iceWitch.id ? iceWitch : {}),
+          ...(follower.id === druid.id ? druid : {}),
           ...follower,
           ...(health.followers[follower.id] || {
             hp: INITIAL_HP,
@@ -274,6 +328,7 @@ export function usePartyCombat(
       }))
       .filter((enemy) => enemy.hp > 0),
     projectiles,
+    healingEffects,
     isGameOver: health.leader.hp <= 0,
   };
 }

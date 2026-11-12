@@ -54,6 +54,7 @@ function App() {
       canvas.height,
       combat.enemies,
       combat.projectiles,
+      combat.healingEffects,
     );
   }, [combat]);
 
