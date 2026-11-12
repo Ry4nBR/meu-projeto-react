@@ -3,13 +3,13 @@ import { useGameLoop } from './useGameLoop';
 
 const INITIAL_POSITION = { x: 400, y: 300 };
 const DEFAULT_SPACING = 40;
-const DEFAULT_FOLLOWER_COUNT = 3;
+const DEFAULT_FOLLOWER_IDS = ['follower-0', 'follower-1', 'follower-2'];
 const DEFAULT_SPEED = 120;
 
-function createInitialParty(direction, followerCount, spacing, initialPosition) {
+function createInitialParty(direction, followerIds, spacing, initialPosition) {
   const positionHistory = [];
 
-  for (let index = followerCount; index > 0; index -= 1) {
+  for (let index = followerIds.length; index > 0; index -= 1) {
     const distance = -index * spacing;
     positionHistory.push({
       distance,
@@ -26,7 +26,8 @@ function createInitialParty(direction, followerCount, spacing, initialPosition) 
 
   return {
     leader: { ...initialPosition },
-    followers: Array.from({ length: followerCount }, (_, index) => ({
+    followers: followerIds.map((id, index) => ({
+      id,
       x: initialPosition.x - direction.x * spacing * (index + 1),
       y: initialPosition.y - direction.y * spacing * (index + 1),
     })),
@@ -70,7 +71,7 @@ function trimPositionHistory(positionHistory, oldestNeededDistance) {
   }
 }
 
-function advanceParty(party, direction, deltaTime, followerCount, spacing, speed) {
+function advanceParty(party, direction, deltaTime, followerIds, spacing, speed) {
   const distanceTravelled = party.distanceTravelled + speed * deltaTime;
   const leader = {
     x: party.leader.x + direction.x * speed * deltaTime,
@@ -81,16 +82,17 @@ function advanceParty(party, direction, deltaTime, followerCount, spacing, speed
     { ...leader, distance: distanceTravelled },
   ];
 
-  const followers = Array.from({ length: followerCount }, (_, index) =>
-    getPositionAtDistance(
+  const followers = followerIds.map((id, index) => ({
+    id,
+    ...getPositionAtDistance(
       positionHistory,
       distanceTravelled - spacing * (index + 1),
     ),
-  );
+  }));
 
   trimPositionHistory(
     positionHistory,
-    distanceTravelled - spacing * followerCount,
+    distanceTravelled - spacing * followerIds.length,
   );
 
   return {
@@ -105,14 +107,15 @@ function advanceParty(party, direction, deltaTime, followerCount, spacing, speed
 export function usePartyMovement(
   direction,
   {
-    followerCount = DEFAULT_FOLLOWER_COUNT,
+    followerIds = DEFAULT_FOLLOWER_IDS,
     spacing = DEFAULT_SPACING,
     speed = DEFAULT_SPEED,
     initialPosition = INITIAL_POSITION,
+    active = true,
   } = {},
 ) {
   const [party, setParty] = useState(() =>
-    createInitialParty(direction, followerCount, spacing, initialPosition),
+    createInitialParty(direction, followerIds, spacing, initialPosition),
   );
 
   useGameLoop((deltaTime) => {
@@ -121,9 +124,9 @@ export function usePartyMovement(
     }
 
     setParty((currentParty) =>
-      advanceParty(currentParty, direction, deltaTime, followerCount, spacing, speed),
+      advanceParty(currentParty, direction, deltaTime, followerIds, spacing, speed),
     );
-  });
+  }, active);
 
   return party;
 }

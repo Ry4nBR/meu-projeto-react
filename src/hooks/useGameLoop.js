@@ -2,11 +2,15 @@ import { useEffect, useRef } from 'react';
 
 const FRAME_DURATION = 1000 / 60;
 
-export function useGameLoop(onFrame) {
+export function useGameLoop(onFrame, enabled = true) {
   const onFrameRef = useRef(onFrame);
   onFrameRef.current = onFrame;
 
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     let animationFrameId;
     let lastFrameTimestamp = null;
 
@@ -31,5 +35,5 @@ export function useGameLoop(onFrame) {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [enabled]);
 }

@@ -8,24 +8,26 @@ const LEADER_RADIUS = 12;
 const FOLLOWER_RADIUS = 9;
 const ENEMY_RADIUS = 10;
 
-function createInitialHealth(followerCount) {
+function createInitialHealth(followers) {
   return {
     leader: { hp: INITIAL_HP, maxHp: INITIAL_HP },
-    followers: Array.from({ length: followerCount }, () => ({
-      hp: INITIAL_HP,
-      maxHp: INITIAL_HP,
-    })),
+    followers: Object.fromEntries(
+      followers.map(({ id }) => [id, { hp: INITIAL_HP, maxHp: INITIAL_HP }]),
+    ),
   };
 }
 
 function applyContactDamage(health, party, enemies) {
   const members = [
     { ...party.leader, ...health.leader, radius: LEADER_RADIUS, id: 'leader' },
-    ...party.followers.map((follower, index) => ({
+    ...party.followers.map((follower) => ({
       ...follower,
-      ...(health.followers[index] || { hp: INITIAL_HP, maxHp: INITIAL_HP }),
+      ...(health.followers[follower.id] || {
+        hp: INITIAL_HP,
+        maxHp: INITIAL_HP,
+      }),
       radius: FOLLOWER_RADIUS,
-      id: `follower-${index}`,
+      id: follower.id,
     })),
   ];
   let nextHealth = health;
@@ -42,7 +44,12 @@ function applyContactDamage(health, party, enemies) {
         if (nextHealth === health) {
           nextHealth = {
             leader: { ...health.leader },
-            followers: health.followers.map((follower) => ({ ...follower })),
+            followers: Object.fromEntries(
+              Object.entries(health.followers).map(([id, follower]) => [
+                id,
+                { ...follower },
+              ]),
+            ),
           };
         }
 
@@ -52,13 +59,11 @@ function applyContactDamage(health, party, enemies) {
             nextHealth.leader.hp - enemy.atk,
           );
         } else {
-          const index = Number(member.id.slice('follower-'.length));
-          const followerHealth =
-            nextHealth.followers[index] || {
-              hp: INITIAL_HP,
-              maxHp: INITIAL_HP,
-            };
-          nextHealth.followers[index] = {
+          const followerHealth = nextHealth.followers[member.id] || {
+            hp: INITIAL_HP,
+            maxHp: INITIAL_HP,
+          };
+          nextHealth.followers[member.id] = {
             ...followerHealth,
             hp: Math.max(0, followerHealth.hp - enemy.atk),
           };
@@ -70,9 +75,9 @@ function applyContactDamage(health, party, enemies) {
   return nextHealth;
 }
 
-export function usePartyCombat(party, enemies) {
+export function usePartyCombat(party, enemies, active = true) {
   const [health, setHealth] = useState(() =>
-    createInitialHealth(party.followers.length),
+    createInitialHealth(party.followers),
   );
   const damageTimer = useRef(0);
 
@@ -86,7 +91,7 @@ export function usePartyCombat(party, enemies) {
     setHealth((currentHealth) =>
       applyContactDamage(currentHealth, party, enemies),
     );
-  });
+  }, active);
 
   return {
     party: {
@@ -96,19 +101,22 @@ export function usePartyCombat(party, enemies) {
         ...health.leader,
         radius: LEADER_RADIUS,
       },
-      followers: party.followers.map((follower, index) => ({
-        ...follower,
-        ...(health.followers[index] || {
-          hp: INITIAL_HP,
-          maxHp: INITIAL_HP,
-        }),
-        radius: FOLLOWER_RADIUS,
-      })),
+      followers: party.followers
+        .map((follower) => ({
+          ...follower,
+          ...(health.followers[follower.id] || {
+            hp: INITIAL_HP,
+            maxHp: INITIAL_HP,
+          }),
+          radius: FOLLOWER_RADIUS,
+        }))
+        .filter((follower) => follower.hp > 0),
     },
     enemies: enemies.map((enemy) => ({
       ...enemy,
       radius: enemy.radius || ENEMY_RADIUS,
     })),
+    isGameOver: health.leader.hp <= 0,
   };
 }
 

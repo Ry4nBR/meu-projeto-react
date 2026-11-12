@@ -1,8 +1,8 @@
 import { act, render } from '@testing-library/react';
 import { useGameLoop } from './useGameLoop';
 
-function GameLoopHarness({ onFrame }) {
-  useGameLoop(onFrame);
+function GameLoopHarness({ onFrame, enabled }) {
+  useGameLoop(onFrame, enabled);
   return null;
 }
 
@@ -51,5 +51,19 @@ test('cancels the scheduled animation frame on unmount', () => {
   unmount();
 
   expect(cancelAnimationFrame).toHaveBeenCalledWith(12);
+  jest.restoreAllMocks();
+});
+
+test('does not schedule frames while disabled', () => {
+  const requestAnimationFrame = jest.spyOn(window, 'requestAnimationFrame');
+  const cancelAnimationFrame = jest.spyOn(window, 'cancelAnimationFrame');
+
+  const { unmount } = render(
+    <GameLoopHarness onFrame={jest.fn()} enabled={false} />,
+  );
+
+  expect(requestAnimationFrame).not.toHaveBeenCalled();
+  unmount();
+  expect(cancelAnimationFrame).not.toHaveBeenCalled();
   jest.restoreAllMocks();
 });

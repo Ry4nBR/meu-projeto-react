@@ -1,5 +1,5 @@
 import './App.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { drawParty } from './game/renderParty';
 import { useEnemyPursuit } from './hooks/useEnemyPursuit';
 import { usePartyCombat } from './hooks/usePartyCombat';
@@ -8,10 +8,30 @@ import { usePlayerDirection } from './hooks/usePlayerDirection';
 
 function App() {
   const canvasRef = useRef(null);
+  const [followerIds, setFollowerIds] = useState([
+    'follower-0',
+    'follower-1',
+    'follower-2',
+  ]);
+  const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
-  const party = usePartyMovement(direction);
-  const enemies = useEnemyPursuit(party);
-  const combat = usePartyCombat(party, enemies);
+  const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
+  const enemies = useEnemyPursuit(party, !isGameOver);
+  const combat = usePartyCombat(party, enemies, !isGameOver);
+
+  useEffect(() => {
+    const survivingFollowerIds = combat.party.followers.map(({ id }) => id);
+    if (
+      survivingFollowerIds.length !== followerIds.length ||
+      survivingFollowerIds.some((id, index) => id !== followerIds[index])
+    ) {
+      setFollowerIds(survivingFollowerIds);
+    }
+
+    if (combat.isGameOver) {
+      setIsGameOver(true);
+    }
+  }, [combat, followerIds]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,6 +59,7 @@ function App() {
         data-enemy-count={enemies.length}
         aria-label="Área do jogo"
       />
+      {isGameOver && <p role="alert">Game Over</p>}
     </main>
   );
 }

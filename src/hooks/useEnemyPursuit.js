@@ -54,7 +54,7 @@ export function advanceEnemies(enemies, party, deltaTime) {
   });
 }
 
-export function useEnemyPursuit(party) {
+export function useEnemyPursuit(party, active = true) {
   const [enemies, setEnemies] = useState(createInitialEnemies);
 
   useGameLoop((deltaTime) => {
@@ -65,7 +65,7 @@ export function useEnemyPursuit(party) {
     setEnemies((currentEnemies) =>
       advanceEnemies(currentEnemies, party, deltaTime),
     );
-  });
+  }, active);
 
   return enemies;
 }
