@@ -120,3 +120,16 @@ test('opens the slot upgrade shop and disables purchases without enough coins', 
   fireEvent.click(screen.getByRole('button', { name: 'Fechar loja' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
+
+test('renders party inspector panel and opens thematic class guide modal', () => {
+  render(<App />);
+
+  expect(screen.getByRole('complementary', { name: 'Painel da Fila' })).toBeInTheDocument();
+  expect(screen.getByText('Painel da Fila')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Guia' }));
+  expect(screen.getByRole('dialog', { name: '🏰 Guia de Classes & Arcade' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Entendido / Jogar' }));
+  expect(screen.queryByRole('dialog', { name: '🏰 Guia de Classes & Arcade' })).not.toBeInTheDocument();
+});

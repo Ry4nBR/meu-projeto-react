@@ -1,98 +1,348 @@
+/* Nimble Quest RPG Arcade — Dark Fantasy & Arcade Theme */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #0b0c10;
+  color: #c5c6c7;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
 .App {
   position: relative;
   min-height: 100vh;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  background-color: #1a1a1a;
+  gap: 20px;
+  padding: 80px 20px 30px;
+  background: radial-gradient(circle at 50% 30%, #1f2833 0%, #0b0c10 85%);
 }
 
+/* TOP HUD — Dark Fantasy / Arcade */
 .game-hud {
   position: absolute;
-  top: 16px;
+  top: 14px;
   display: flex;
-  gap: 24px;
-  color: #fff;
-  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 8px 24px;
+  background: rgba(15, 18, 26, 0.92);
+  border: 1px solid #d4af37;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 10px rgba(212, 175, 55, 0.25);
+  color: #f1f2f6;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+.game-hud span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .game-hud button,
-.shop-panel button {
-  border: 0;
-  border-radius: 4px;
-  padding: 6px 12px;
+.shop-panel button,
+.quick-slot-button,
+.guide-start-btn {
+  border: 1px solid #d4af37;
+  border-radius: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(180deg, #3a2e1d 0%, #1e170d 100%);
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-.game-hud button:disabled {
+.game-hud button:hover:not(:disabled),
+.shop-panel button:hover:not(:disabled),
+.quick-slot-button:hover:not(:disabled),
+.guide-start-btn:hover {
+  background: linear-gradient(180deg, #57462c 0%, #352918 100%);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.game-hud button:disabled,
+.shop-panel button:disabled,
+.quick-slot-button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.45;
+  border-color: #555;
+  color: #888;
+  background: #1c1c1c;
 }
 
-.pause-overlay {
+/* GAME LAYOUT (Canvas + Party Inspector) */
+.game-layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  max-width: 100%;
+}
+
+.game-canvas {
+  display: block;
+  width: 800px;
+  height: 600px;
+  max-width: calc(100vw - 32px);
+  background-color: #12151e;
+  border: 2px solid #3d455b;
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(102, 252, 241, 0.1);
+}
+
+/* PAINEL LATERAL DA FILA (PARTY INSPECTOR) */
+.party-inspector {
+  width: 250px;
+  min-height: 600px;
+  background: rgba(18, 22, 32, 0.95);
+  border: 1px solid #4a3e20;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65), 0 0 12px rgba(212, 175, 55, 0.15);
+}
+
+.party-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #4a3e20;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.party-inspector-header h2 {
+  margin: 0;
+  font-size: 15px;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.party-slot-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #66fcf1;
+}
+
+.party-member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.party-member-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(28, 33, 48, 0.8);
+  border: 1px solid #2f364a;
+  border-radius: 6px;
+  padding: 8px 10px;
+  transition: border-color 0.15s ease;
+}
+
+.party-member-card.leader {
+  border-color: #ffd700;
+  background: linear-gradient(90deg, rgba(64, 52, 22, 0.5) 0%, rgba(28, 33, 48, 0.8) 100%);
+}
+
+.member-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.member-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.member-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f2f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-hp-text {
+  font-size: 10px;
+  color: #a4b0be;
+  font-weight: 600;
+}
+
+.member-hp-track {
+  width: 100%;
+  height: 6px;
+  background: #2f1d1d;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.member-hp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e74c3c 0%, #2ecc71 100%);
+  transition: width 0.2s ease;
+}
+
+.party-inspector-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #4a3e20;
+}
+
+.quick-slot-button {
+  width: 100%;
+  padding: 10px;
+}
+
+/* MODAIS — Dark Fantasy / Gothic Filigree */
+.pause-overlay,
+.shop-panel,
+.game-over-panel,
+.class-guide-modal {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 2;
-  min-width: 260px;
-  padding: 24px;
+  z-index: 100;
   transform: translate(-50%, -50%);
-  border: 1px solid #8fc7ff;
-  border-radius: 10px;
-  background: rgba(26, 26, 26, 0.94);
-  color: #fff;
+  border: 2px solid #d4af37;
+  border-radius: 12px;
+  background: rgba(14, 17, 24, 0.98);
+  color: #f1f2f6;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+.pause-overlay {
+  min-width: 280px;
+  padding: 28px;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
 .pause-overlay h1 {
   margin: 0 0 12px;
-  color: #8fc7ff;
-}
-
-.pause-overlay p {
-  margin: 0;
+  color: #66fcf1;
+  font-size: 22px;
 }
 
 .shop-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 1;
-  min-width: 260px;
-  padding: 24px;
-  transform: translate(-50%, -50%);
-  border: 1px solid #ffd700;
-  border-radius: 8px;
-  background: #282828;
-  color: #fff;
+  min-width: 300px;
+  padding: 28px;
   text-align: center;
 }
 
-.shop-panel button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.shop-panel h2 {
+  margin: 0 0 16px;
+  color: #ffd700;
+}
+
+.shop-close,
+.guide-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent !important;
+  border: 0 !important;
+  color: #a4b0be !important;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.shop-close:hover,
+.guide-close:hover {
+  color: #ffd700 !important;
+}
+
+.class-guide-modal {
+  width: 90%;
+  max-width: 520px;
+  padding: 28px;
+}
+
+.class-guide-modal h2 {
+  margin: 0 0 8px;
+  color: #ffd700;
+  font-size: 20px;
+  text-align: center;
+}
+
+.guide-subtitle {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #a4b0be;
+  text-align: center;
+}
+
+.guide-classes-list {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.guide-classes-list li {
+  background: rgba(28, 33, 48, 0.7);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #d4af37;
+}
+
+.guide-start-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
 }
 
 .game-over-panel {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  min-width: 280px;
-  padding: 28px;
-  transform: translate(-50%, -50%);
-  border: 1px solid #d9534f;
-  border-radius: 12px;
-  background: rgba(26, 26, 26, 0.96);
-  color: #fff;
+  min-width: 320px;
+  padding: 32px;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  border-color: #e74c3c;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 30px rgba(231, 76, 60, 0.3);
 }
 
 .game-over-panel h1 {
   margin: 0 0 20px;
-  color: #ff7772;
+  color: #ff6b6b;
+  font-size: 26px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .game-over-panel dl {
@@ -103,35 +353,42 @@
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
 }
 
 .game-over-panel dd {
   margin: 0;
   font-weight: 700;
+  color: #ffd700;
 }
 
 .game-over-panel button {
-  border: 0;
+  border: 1px solid #e74c3c;
   border-radius: 6px;
-  padding: 10px 18px;
-  background: #d9534f;
+  padding: 12px 24px;
+  background: linear-gradient(180deg, #c0392b 0%, #7f1d1d 100%);
   color: #fff;
   font-weight: 700;
+  font-size: 15px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.shop-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+.game-over-panel button:hover {
+  background: linear-gradient(180deg, #e74c3c 0%, #991b1b 100%);
+  box-shadow: 0 0 14px rgba(231, 76, 60, 0.6);
 }
 
-.game-canvas {
-  display: block;
-  width: 800px;
-  height: auto;
-  max-width: calc(100vw - 32px);
-  background-color: #1a1a1a;
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .App {
+    flex-direction: column;
+  }
+  .party-inspector {
+    width: 800px;
+    max-width: calc(100vw - 32px);
+    min-height: auto;
+  }
 }

@@ -11,6 +11,8 @@ import { usePlayerDirection } from './hooks/usePlayerDirection';
 import { useWaveManager } from './hooks/useWaveManager';
 import { useRecruitSpawns } from './hooks/useRecruitSpawns';
 import GameOverScreen from './components/GameOverScreen';
+import PartyInspector from './components/PartyInspector';
+import ClassGuideModal from './components/ClassGuideModal';
 import { hasCanvasBoundaryCollision } from './game/boundaries';
 
 function GameSession({ onRestart }) {
@@ -30,6 +32,7 @@ function GameSession({ onRestart }) {
   const [maxPartySlots, setMaxPartySlots] = useState(7);
   const [slotUpgradeCount, setSlotUpgradeCount] = useState(0);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const isGameActive = !isPaused && !isGameOver;
@@ -186,21 +189,6 @@ function GameSession({ onRestart }) {
 
   return (
     <main className="App">
-      <canvas
-        ref={canvasRef}
-        className="game-canvas"
-        width={800}
-        height={600}
-        data-direction-x={direction.x}
-        data-direction-y={direction.y}
-        data-leader-x={party.leader.x}
-        data-leader-y={party.leader.y}
-        data-follower-count={party.followers.length}
-        data-enemy-count={combat.enemies.length}
-        data-coins={combat.coins}
-        data-recruit-count={recruits.length}
-        aria-label="Área do jogo"
-      />
       <section className="game-hud" aria-label="Status do jogo">
         <span>Wave: {waveInfo.wave}</span>
         <span>Inimigos restantes: {combat.enemies.length}</span>
@@ -209,6 +197,12 @@ function GameSession({ onRestart }) {
         <span>
           Fila: {combat.party.followers.length + 1}/{maxPartySlots}
         </span>
+        <button
+          type="button"
+          onClick={() => setIsGuideOpen(true)}
+        >
+          Guia
+        </button>
         <button
           type="button"
           aria-pressed={isPaused}
@@ -224,6 +218,39 @@ function GameSession({ onRestart }) {
           Loja
         </button>
       </section>
+
+      <canvas
+        ref={canvasRef}
+        className="game-canvas"
+        width={800}
+        height={600}
+        data-direction-x={direction.x}
+        data-direction-y={direction.y}
+        data-leader-x={party.leader.x}
+        data-leader-y={party.leader.y}
+        data-follower-count={party.followers.length}
+        data-enemy-count={combat.enemies.length}
+        data-coins={combat.coins}
+        data-recruit-count={recruits.length}
+        aria-label="Área do jogo"
+      />
+
+      <PartyInspector
+        leader={combat.party.leader}
+        followers={combat.party.followers}
+        maxPartySlots={maxPartySlots}
+        coins={combat.coins}
+        slotUpgradeCost={slotUpgradeCost}
+        onSlotUpgrade={handleSlotUpgrade}
+        isPaused={isPaused}
+        isGameOver={isGameOver}
+      />
+
+      <ClassGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
+
       {isPaused && !isGameOver && (
         <section className="pause-overlay" aria-live="polite">
           <h1>Jogo pausado</h1>
