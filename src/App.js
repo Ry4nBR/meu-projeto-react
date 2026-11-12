@@ -10,8 +10,9 @@ import { usePartyMovement } from './hooks/usePartyMovement';
 import { usePlayerDirection } from './hooks/usePlayerDirection';
 import { useWaveManager } from './hooks/useWaveManager';
 import { useRecruitSpawns } from './hooks/useRecruitSpawns';
+import GameOverScreen from './components/GameOverScreen';
 
-function App() {
+function GameSession({ onRestart }) {
   const canvasRef = useRef(null);
   const [followerIds, setFollowerIds] = useState([
     'follower-0',
@@ -189,8 +190,26 @@ function App() {
           </button>
         </section>
       )}
-      {isGameOver && <p role="alert">Game Over</p>}
+      {isGameOver && (
+        <GameOverScreen
+          wavesSurvived={Math.max(0, waveInfo.wave - 1)}
+          enemiesDefeated={combat.enemiesDefeated}
+          coinsCollected={combat.coinsCollected}
+          onRestart={onRestart}
+        />
+      )}
     </main>
+  );
+}
+
+function App() {
+  const [gameRun, setGameRun] = useState(0);
+
+  return (
+    <GameSession
+      key={gameRun}
+      onRestart={() => setGameRun((currentRun) => currentRun + 1)}
+    />
   );
 }
 

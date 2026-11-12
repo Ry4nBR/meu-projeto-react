@@ -44,6 +44,54 @@
   opacity: 0.55;
 }
 
+.game-over-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  min-width: 280px;
+  padding: 28px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #d9534f;
+  border-radius: 12px;
+  background: rgba(26, 26, 26, 0.96);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.game-over-panel h1 {
+  margin: 0 0 20px;
+  color: #ff7772;
+}
+
+.game-over-panel dl {
+  margin: 0 0 24px;
+}
+
+.game-over-panel dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.game-over-panel dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.game-over-panel button {
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 18px;
+  background: #d9534f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .shop-close {
   position: absolute;
   top: 8px;
