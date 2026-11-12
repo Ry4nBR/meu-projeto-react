@@ -49,10 +49,10 @@ test('moves the leader at constant speed and follows its position history at fix
   expect(party.leader.x).toBeCloseTo(520, 3);
   expect(party.leader.y).toBeCloseTo(300, 3);
   expect(party.followers).toHaveLength(4);
-  expect(party.followers[0].x).toBeCloseTo(480, 3);
-  expect(party.followers[1].x).toBeCloseTo(440, 3);
-  expect(party.followers[2].x).toBeCloseTo(400, 3);
-  expect(party.followers[3].x).toBeCloseTo(360, 3);
+  expect(party.followers[0].x).toBeCloseTo(488, 3);
+  expect(party.followers[1].x).toBeCloseTo(456, 3);
+  expect(party.followers[2].x).toBeCloseTo(424, 3);
+  expect(party.followers[3].x).toBeCloseTo(392, 3);
   expect(party.followers.every((follower) => follower.y === 300)).toBe(true);
 });
 
@@ -76,8 +76,8 @@ test('records turns in the position history for followers to trace', () => {
 });
 
 test('uses fixed distance offsets and keeps the party on the same path through turns', () => {
-  expect(getFollowerTargetDistance(123, 0, 40)).toBe(83);
-  expect(getFollowerTargetDistance(123, 3, 40)).toBe(-37);
+  expect(getFollowerTargetDistance(123, 0, 32)).toBe(91);
+  expect(getFollowerTargetDistance(123, 3, 32)).toBe(-5);
   expect(
     getPositionAtDistance(
       [
@@ -108,7 +108,7 @@ test('uses fixed distance offsets and keeps the party on the same path through t
         getFollowerTargetDistance(
           party.distanceTravelled,
           index,
-          40,
+          32,
         ),
       ),
     );

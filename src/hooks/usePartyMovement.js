@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useGameLoop } from './useGameLoop';
 
 const INITIAL_POSITION = { x: 400, y: 300 };
-const DEFAULT_SPACING = 40;
+const DEFAULT_SPACING = 32;
 const DEFAULT_FOLLOWER_IDS = [
   'follower-0',
   'follower-1',
