@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { createWarriorLeader, WARRIOR_CONFIG } from '../game/classes';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -9,11 +10,13 @@ const FOLLOWER_RADIUS = 9;
 const ENEMY_RADIUS = 10;
 
 function createInitialHealth(followers) {
+  const warrior = createWarriorLeader();
   return {
-    leader: { hp: INITIAL_HP, maxHp: INITIAL_HP },
+    leader: { hp: warrior.hp, maxHp: warrior.maxHp },
     followers: Object.fromEntries(
       followers.map(({ id }) => [id, { hp: INITIAL_HP, maxHp: INITIAL_HP }]),
     ),
+    enemies: {},
   };
 }
 
@@ -33,6 +36,11 @@ function applyContactDamage(health, party, enemies) {
   let nextHealth = health;
 
   enemies.forEach((enemy) => {
+    const enemyHealth = health.enemies?.[enemy.id];
+    if (enemyHealth && enemyHealth.hp <= 0) {
+      return;
+    }
+
     members.forEach((member) => {
       if (
         member.hp > 0 &&
@@ -50,13 +58,15 @@ function applyContactDamage(health, party, enemies) {
                 { ...follower },
               ]),
             ),
+            enemies: { ...health.enemies },
           };
         }
 
         if (member.id === 'leader') {
           nextHealth.leader.hp = Math.max(
             0,
-            nextHealth.leader.hp - enemy.atk,
+            nextHealth.leader.hp -
+              enemy.atk * (1 - WARRIOR_CONFIG.damageReduction),
           );
         } else {
           const followerHealth = nextHealth.followers[member.id] || {
@@ -75,28 +85,79 @@ function applyContactDamage(health, party, enemies) {
   return nextHealth;
 }
 
+function applyWarriorAttack(health, leader, enemies) {
+  let nextHealth = health;
+
+  enemies.forEach((enemy) => {
+    const enemyHealth = nextHealth.enemies[enemy.id] || {
+      hp: enemy.hp,
+      maxHp: enemy.maxHp,
+    };
+    if (
+      enemyHealth.hp <= 0 ||
+      Math.hypot(enemy.x - leader.x, enemy.y - leader.y) > WARRIOR_CONFIG.range
+    ) {
+      return;
+    }
+
+    if (nextHealth === health) {
+      nextHealth = {
+        ...health,
+        leader: { ...health.leader },
+        followers: { ...health.followers },
+        enemies: { ...health.enemies },
+      };
+    }
+
+    nextHealth.enemies[enemy.id] = {
+      ...enemyHealth,
+      hp: Math.max(0, enemyHealth.hp - WARRIOR_CONFIG.atk),
+    };
+  });
+
+  return nextHealth;
+}
+
 export function usePartyCombat(party, enemies, active = true) {
   const [health, setHealth] = useState(() =>
     createInitialHealth(party.followers),
   );
   const damageTimer = useRef(0);
+  const warriorTimer = useRef(0);
 
   useGameLoop((deltaTime) => {
     damageTimer.current += deltaTime;
-    if (damageTimer.current < DAMAGE_INTERVAL) {
+    warriorTimer.current += deltaTime;
+    const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
+    const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
+    if (!canDamage && !canAttack) {
       return;
     }
 
-    damageTimer.current %= DAMAGE_INTERVAL;
-    setHealth((currentHealth) =>
-      applyContactDamage(currentHealth, party, enemies),
-    );
+    if (canDamage) {
+      damageTimer.current %= DAMAGE_INTERVAL;
+    }
+    if (canAttack) {
+      warriorTimer.current %= WARRIOR_CONFIG.cooldown;
+    }
+
+    setHealth((currentHealth) => {
+      let nextHealth = currentHealth;
+      if (canDamage) {
+        nextHealth = applyContactDamage(nextHealth, party, enemies);
+      }
+      if (canAttack) {
+        nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
+      }
+      return nextHealth;
+    });
   }, active);
 
   return {
     party: {
       ...party,
       leader: {
+        ...createWarriorLeader(),
         ...party.leader,
         ...health.leader,
         radius: LEADER_RADIUS,
@@ -112,12 +173,18 @@ export function usePartyCombat(party, enemies, active = true) {
         }))
         .filter((follower) => follower.hp > 0),
     },
-    enemies: enemies.map((enemy) => ({
-      ...enemy,
-      radius: enemy.radius || ENEMY_RADIUS,
-    })),
+    enemies: enemies
+      .map((enemy) => ({
+        ...enemy,
+        ...(health.enemies[enemy.id] || {
+          hp: enemy.hp,
+          maxHp: enemy.maxHp,
+        }),
+        radius: enemy.radius || ENEMY_RADIUS,
+      }))
+      .filter((enemy) => enemy.hp > 0),
     isGameOver: health.leader.hp <= 0,
   };
 }
 
-export { applyContactDamage };
+export { applyContactDamage, applyWarriorAttack };
