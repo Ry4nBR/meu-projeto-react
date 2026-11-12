@@ -6,7 +6,7 @@ export const NECROMANCER_CONFIG = {
 };
 
 export const SKELETON_CONFIG = {
-  hp: 60,
+  hp: 80,
   atk: 10,
   speed: 80,
   attackRange: 18,
@@ -40,6 +40,8 @@ export function createSkeleton(id, position) {
     attackTimer: 0,
   };
 }
+
+export const SkeletonMinion = createSkeleton;
 
 export function advanceSkeletons(skeletons, enemies, deltaTime) {
   const hits = [];

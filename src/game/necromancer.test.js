@@ -2,6 +2,7 @@ import {
   advanceSkeletons,
   createNecromancer,
   createSkeleton,
+  SkeletonMinion,
   NECROMANCER_CONFIG,
   SKELETON_CONFIG,
 } from './necromancer';
@@ -40,8 +41,23 @@ test('skeletons pursue the nearest enemy and attack when in range', () => {
 test('skeleton attacks use their own damage value', () => {
   expect(SKELETON_CONFIG.atk).toBe(10);
   expect(createSkeleton('skeleton-1', { x: 1, y: 2 })).toMatchObject({
-    hp: 60,
-    maxHp: 60,
+    hp: 80,
+    maxHp: 80,
     atk: 10,
+  });
+});
+
+test('SkeletonMinion is an alias for createSkeleton and instantiates autonomous minion with 80 HP', () => {
+  const minion = SkeletonMinion('skeleton-minion-1', { x: 10, y: 20 });
+  expect(minion).toEqual({
+    id: 'skeleton-minion-1',
+    x: 10,
+    y: 20,
+    hp: 80,
+    maxHp: 80,
+    atk: 10,
+    speed: 80,
+    radius: 7,
+    attackTimer: 0,
   });
 });

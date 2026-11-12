@@ -32,3 +32,12 @@ export function isInMeleeArc(leader, direction, enemy) {
   const dot = (dx * direction.x + dy * direction.y) / dist;
   return dot >= Math.cos(WARRIOR_CONFIG.arcAngle / 2);
 }
+
+export {
+  createNecromancer,
+  NECROMANCER_CONFIG,
+  SKELETON_CONFIG,
+  createSkeleton,
+  SkeletonMinion,
+  advanceSkeletons,
+} from './necromancer';

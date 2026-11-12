@@ -398,6 +398,10 @@ test('Necromancer summons uncapped skeletons every fifteen seconds', () => {
   act(() => scheduledFrame(30000));
   combat = JSON.parse(screen.getByLabelText('combat').textContent);
   expect(combat.skeletons).toHaveLength(2);
+
+  act(() => scheduledFrame(45000));
+  combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.skeletons).toHaveLength(3);
   expect(NECROMANCER_CONFIG.cooldown).toBe(15);
 });
 
