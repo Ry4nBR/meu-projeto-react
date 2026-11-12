@@ -1,12 +1,34 @@
 import { checkCollision } from './physics';
 
 export const RECRUIT_SPAWN_INTERVAL = 20;
+export const RARE_RECRUIT_CHANCE = 0.15;
 export const RECRUIT_CLASSES = [
   { classType: 'druid', name: 'Druida', color: '#38ef7d' },
   { classType: 'ice-witch', name: 'Bruxa de Gelo', color: '#9be7ff' },
   { classType: 'wind-mage', name: 'Mago de Vento', color: '#b7f7ff' },
   { classType: 'necromancer', name: 'Necromante', color: '#d8c6ff' },
 ];
+
+export function createGoldenPaladin(id, random = Math.random) {
+  return {
+    id,
+    classType: 'golden-paladin',
+    name: 'Paladino Dourado',
+    color: '#ffd700',
+    x: 40 + random() * 720,
+    y: 40 + random() * 520,
+    radius: 14,
+    hp: 300,
+    maxHp: 300,
+    auraRange: 54,
+    auraDamage: 12,
+    isRare: true,
+  };
+}
+
+export function shouldSpawnRareRecruit(random = Math.random) {
+  return random() < RARE_RECRUIT_CHANCE;
+}
 
 export function createRecruit(id, random = Math.random) {
   const classIndex = Math.floor(random() * RECRUIT_CLASSES.length);

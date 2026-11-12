@@ -39,11 +39,28 @@ export function drawParty(
   context.clearRect(0, 0, width, height);
 
   party.followers.forEach((follower) => {
+    if (follower.classType === 'golden-paladin') {
+      context.globalAlpha = 0.28;
+      context.fillStyle = '#ffd700';
+      context.beginPath();
+      context.arc(
+        follower.x,
+        follower.y,
+        follower.auraRange || 54,
+        0,
+        Math.PI * 2,
+      );
+      context.fill();
+      context.globalAlpha = 1;
+      context.shadowColor = '#fff2a8';
+      context.shadowBlur = 18;
+    }
     context.fillStyle = follower.color || FOLLOWER_COLOR;
     context.beginPath();
     context.arc(follower.x, follower.y, FOLLOWER_RADIUS, 0, Math.PI * 2);
     context.fill();
-    drawHealthBar(context, follower, FOLLOWER_RADIUS);
+    context.shadowBlur = 0;
+    drawHealthBar(context, follower, follower.radius || FOLLOWER_RADIUS);
   });
 
   context.fillStyle = LEADER_COLOR;
@@ -152,9 +169,14 @@ export function drawParty(
 
   recruits.forEach((recruit) => {
     context.fillStyle = recruit.color || '#ffffff';
+    if (recruit.isRare) {
+      context.shadowColor = '#fff2a8';
+      context.shadowBlur = 22;
+    }
     context.beginPath();
     context.arc(recruit.x, recruit.y, recruit.radius || 11, 0, Math.PI * 2);
     context.fill();
+    context.shadowBlur = 0;
     context.fillStyle = '#ffffff';
     context.font = '10px sans-serif';
     context.textAlign = 'center';

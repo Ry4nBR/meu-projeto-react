@@ -41,6 +41,14 @@ function App() {
     () => createWaveEnemies(1),
   );
   const waveInfo = useWaveManager(pursuit.spawnEnemies, !isGameOver);
+  const enemies = pursuit.enemies;
+  const combat = usePartyCombat(
+    party,
+    enemies,
+    !isGameOver,
+    pursuit.applySlow,
+    pursuit.applyKnockback,
+  );
   const recruits = useRecruitSpawns(
     party,
     maxPartySlots,
@@ -57,19 +65,20 @@ function App() {
           [recruit.id]: {
             classType: recruit.classType,
             name: recruit.name,
+            color: recruit.color,
+            maxHp: recruit.maxHp,
+            hp: recruit.hp,
+            auraRange: recruit.auraRange,
+            auraDamage: recruit.auraDamage,
           },
         }));
+        if (recruit.isRare) {
+          combat.addCoins(50);
+        }
       }
     },
     !isGameOver,
-  );
-  const enemies = pursuit.enemies;
-  const combat = usePartyCombat(
-    party,
-    enemies,
-    !isGameOver,
-    pursuit.applySlow,
-    pursuit.applyKnockback,
+    waveInfo.wave,
   );
   const slotUpgradeCost = getSlotUpgradeCost(slotUpgradeCount);
 
@@ -122,7 +131,6 @@ function App() {
       combat.skeletons,
       combat.coinDrops,
       combat.coinPickupEffects,
-      recruits,
       recruits,
     );
   }, [combat, recruits]);

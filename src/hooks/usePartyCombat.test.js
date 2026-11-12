@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import {
+  applyGoldenPaladinAura,
   applyContactDamage,
   applyIceProjectileDamage,
   applyWarriorAttack,
@@ -388,6 +389,27 @@ test('an ability kill produces a coin drop at the enemy position', () => {
   });
   expect(result.coinDrops[0].value).toBeGreaterThanOrEqual(1);
   expect(result.coinDrops[0].value).toBeLessThanOrEqual(5);
+});
+
+test('the golden paladin aura damages enemies in range and leaves distant enemies alone', () => {
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {},
+    enemies: {},
+    coinDrops: [],
+  };
+  const result = applyGoldenPaladinAura(
+    health,
+    [{ x: 100, y: 100, auraRange: 54, auraDamage: 12 }],
+    [
+      { id: 'near', x: 120, y: 100, hp: 50, maxHp: 50 },
+      { id: 'far', x: 200, y: 100, hp: 50, maxHp: 50 },
+    ],
+    1,
+  );
+
+  expect(result.enemies.near.hp).toBe(38);
+  expect(result.enemies.far).toBeUndefined();
 });
 
 test('collects dropped coins, updates the wallet, and emits a pickup effect', () => {

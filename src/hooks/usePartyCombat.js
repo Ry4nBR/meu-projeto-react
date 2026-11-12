@@ -33,17 +33,27 @@ const DAMAGE_INTERVAL = 0.5;
 const LEADER_RADIUS = 12;
 const FOLLOWER_RADIUS = 9;
 const ENEMY_RADIUS = 10;
+const DEFAULT_FOLLOWER_HEALTH = 100;
+
+function getFollowerHealth(follower) {
+  const maxHp = follower.maxHp || DEFAULT_FOLLOWER_HEALTH;
+  return { hp: follower.hp || maxHp, maxHp };
+}
 
 function createInitialHealth(followers) {
   const warrior = createWarriorLeader();
   return {
     leader: { hp: warrior.hp, maxHp: warrior.maxHp },
     followers: Object.fromEntries(
-      followers.map(({ id }) => [id, { hp: INITIAL_HP, maxHp: INITIAL_HP }]),
+      followers.map((follower) => [
+        follower.id,
+        getFollowerHealth(follower),
+      ]),
     ),
     enemies: {},
     skeletons: {},
     coinDrops: [],
+    enemiesDefeated: 0,
   };
 }
 
@@ -52,10 +62,7 @@ function applyContactDamage(health, party, enemies) {
     { ...party.leader, ...health.leader, radius: LEADER_RADIUS, id: 'leader' },
     ...party.followers.map((follower) => ({
       ...follower,
-      ...(health.followers[follower.id] || {
-        hp: INITIAL_HP,
-        maxHp: INITIAL_HP,
-      }),
+      ...(health.followers[follower.id] || getFollowerHealth(follower)),
       radius: FOLLOWER_RADIUS,
       id: follower.id,
     })),
@@ -171,6 +178,27 @@ function applySkeletonDamage(health, enemyId, damage) {
   return applyEnemyDamage(health, enemyId, damage);
 }
 
+export function applyGoldenPaladinAura(health, followers, enemies, deltaTime) {
+  return followers.reduce(
+    (nextHealth, paladin) =>
+      enemies.reduce((enemyHealth, enemy) => {
+        if (
+          Math.hypot(enemy.x - paladin.x, enemy.y - paladin.y) >
+          paladin.auraRange
+        ) {
+          return enemyHealth;
+        }
+
+        return applyEnemyDamage(
+          enemyHealth,
+          enemy,
+          paladin.auraDamage * deltaTime,
+        );
+      }, nextHealth),
+    health,
+  );
+}
+
 export function usePartyCombat(
   party,
   enemies,
@@ -186,6 +214,7 @@ export function usePartyCombat(
   const [shockwaves, setShockwaves] = useState([]);
   const [skeletons, setSkeletons] = useState([]);
   const [coins, setCoins] = useState(0);
+  const [coinsCollected, setCoinsCollected] = useState(0);
   const [coinPickupEffects, setCoinPickupEffects] = useState([]);
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
@@ -213,6 +242,10 @@ export function usePartyCombat(
     },
     [coins],
   );
+  const addCoins = useCallback((amount) => {
+    setCoins((currentCoins) => currentCoins + amount);
+    setCoinsCollected((currentTotal) => currentTotal + amount);
+  }, []);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -232,10 +265,14 @@ export function usePartyCombat(
     }
 
     if (collection.collected.length > 0) {
-      setCoins((currentCoins) =>
-        currentCoins +
-        collection.collected.reduce((total, coin) => total + coin.value, 0),
+      const collectedValue = collection.collected.reduce(
+        (total, coin) => total + coin.value,
+        0,
       );
+      setCoins((currentCoins) =>
+        currentCoins + collectedValue,
+      );
+      setCoinsCollected((currentTotal) => currentTotal + collectedValue);
       setCoinPickupEffects((currentEffects) => [
         ...currentEffects,
         ...collection.collected.map((coin) => ({
@@ -261,6 +298,21 @@ export function usePartyCombat(
     const livingEnemies = enemies.filter(
       (enemy) => (health.enemies[enemy.id]?.hp ?? enemy.hp) > 0,
     );
+    const goldenPaladins = party.followers.filter(
+      ({ classType, id }) =>
+        classType === 'golden-paladin' &&
+        (health.followers[id]?.hp ?? DEFAULT_FOLLOWER_HEALTH) > 0,
+    );
+    if (goldenPaladins.length > 0 && livingEnemies.length > 0) {
+      setHealth((currentHealth) =>
+        applyGoldenPaladinAura(
+          currentHealth,
+          goldenPaladins,
+          livingEnemies,
+          deltaTime,
+        ),
+      );
+    }
     damageTimer.current += deltaTime;
     warriorTimer.current += deltaTime;
     iceWitchTimer.current += deltaTime;
@@ -513,10 +565,12 @@ export function usePartyCombat(
           ...(follower.id === necromancer.id ? necromancer : {}),
           ...follower,
           ...(health.followers[follower.id] || {
-            hp: INITIAL_HP,
-            maxHp: INITIAL_HP,
+            ...getFollowerHealth(follower),
           }),
-          radius: FOLLOWER_RADIUS,
+          radius:
+            follower.classType === 'golden-paladin'
+              ? follower.radius
+              : FOLLOWER_RADIUS,
         }))
         .filter((follower) => follower.hp > 0),
     },
@@ -535,6 +589,9 @@ export function usePartyCombat(
     shockwaves,
     coinDrops: health.coinDrops || [],
     coins,
+    coinsCollected,
+    enemiesDefeated: health.enemiesDefeated || 0,
+    addCoins,
     spendCoins,
     coinPickupEffects,
     skeletons: skeletons

@@ -31,6 +31,9 @@ export function applyEnemyDamage(health, enemy, damage, random = Math.random) {
   return {
     ...health,
     ...(hp === 0 ? { coinDrops: nextCoinDrops } : {}),
+    ...(hp === 0
+      ? { enemiesDefeated: (health.enemiesDefeated || 0) + 1 }
+      : {}),
     enemies: {
       ...health.enemies,
       [enemy.id]: { ...enemyHealth, hp },

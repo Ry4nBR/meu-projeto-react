@@ -1,16 +1,38 @@
 import { useRef, useState } from 'react';
-import { collectRecruit, createRecruit, RECRUIT_SPAWN_INTERVAL } from '../game/recruits';
+import {
+  collectRecruit,
+  createGoldenPaladin,
+  createRecruit,
+  RECRUIT_SPAWN_INTERVAL,
+  shouldSpawnRareRecruit,
+} from '../game/recruits';
 import { useGameLoop } from './useGameLoop';
 
-export function useRecruitSpawns(party, maxPartySlots, onRecruit, active = true) {
+export function useRecruitSpawns(
+  party,
+  maxPartySlots,
+  onRecruit,
+  active = true,
+  wave = 1,
+) {
   const [recruits, setRecruits] = useState([]);
   const recruitsRef = useRef([]);
   const elapsedRef = useRef(0);
   const nextIdRef = useRef(0);
+  const observedWaveRef = useRef(0);
   const onRecruitRef = useRef(onRecruit);
   onRecruitRef.current = onRecruit;
 
   useGameLoop((deltaTime) => {
+    if (wave > observedWaveRef.current) {
+      observedWaveRef.current = wave;
+      if (shouldSpawnRareRecruit()) {
+        const recruit = createGoldenPaladin(`golden-paladin-wave-${wave}`);
+        recruitsRef.current = [...recruitsRef.current, recruit];
+        setRecruits(recruitsRef.current);
+      }
+    }
+
     if (deltaTime <= 0) {
       return;
     }
