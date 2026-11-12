@@ -501,7 +501,7 @@ export function usePartyCombat(
         if (damagedIds.length > 0) {
           setHitEffects((currentEffects) => ({
             ...currentEffects,
-            ...Object.fromEntries(damagedIds.map((id) => [id, 0.3])),
+            ...Object.fromEntries(damagedIds.map((id) => [id, 0.15])),
           }));
         }
       }
@@ -678,6 +678,7 @@ export function usePartyCombat(
         }))
         .filter((follower) => follower.hp > 0),
     },
+    leaderDead: health.leader.hp <= 0,
     enemies: enemies
       .map((enemy) => ({
         ...enemy,
@@ -710,7 +711,11 @@ export function usePartyCombat(
         }),
       }))
       .filter((skeleton) => skeleton.hp > 0),
-    isGameOver: health.leader.hp <= 0,
+    isGameOver:
+      health.leader.hp <= 0 &&
+      party.followers.filter(
+        (f) => (health.followers[f.id]?.hp ?? DEFAULT_FOLLOWER_HEALTH) > 0,
+      ).length === 0,
   };
 }
 

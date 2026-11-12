@@ -139,6 +139,20 @@ function GameSession({ onRestart }) {
       setFollowerIds(survivingFollowerIds);
     }
 
+    if (combat.leaderDead && survivingFollowerIds.length > 0) {
+      // Leader died but followers survive — promote next in line
+      const promoted = survivingFollowerIds[0];
+      const promotedClass = classById[promoted];
+      if (promotedClass) {
+        setFollowerIds(survivingFollowerIds.slice(1));
+        setClassById((current) => {
+          const next = { ...current };
+          delete next[promoted];
+          return next;
+        });
+      }
+    }
+
     if (combat.isGameOver) {
       setIsGameOver(true);
     }
