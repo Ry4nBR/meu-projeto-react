@@ -56,3 +56,18 @@ test('shows the party size and initial capacity in the game HUD', () => {
 
   expect(screen.getByText('Fila: 5/7')).toBeInTheDocument();
 });
+
+test('opens the slot upgrade shop and disables purchases without enough coins', () => {
+  render(<App />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Loja' }));
+
+  const shop = screen.getByRole('dialog', { name: 'Loja' });
+  expect(shop).toHaveTextContent('+1 Slot de Fila — 50 moedas');
+  expect(
+    screen.getByRole('button', { name: 'Comprar +1 slot' }),
+  ).toBeDisabled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar loja' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});

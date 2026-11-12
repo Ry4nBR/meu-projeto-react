@@ -2,6 +2,7 @@ import './App.css';
 import { useEffect, useRef, useState } from 'react';
 import { drawParty } from './game/renderParty';
 import { createWaveEnemies } from './game/waves';
+import { getSlotUpgradeCost, purchaseSlotUpgrade } from './game/shop';
 import { useEnemyPursuit } from './hooks/useEnemyPursuit';
 import { usePartyCombat } from './hooks/usePartyCombat';
 import { usePartyMovement } from './hooks/usePartyMovement';
@@ -16,7 +17,9 @@ function App() {
     'follower-2',
     'follower-3',
   ]);
-  const [maxPartySlots] = useState(7);
+  const [maxPartySlots, setMaxPartySlots] = useState(7);
+  const [slotUpgradeCount, setSlotUpgradeCount] = useState(0);
+  const [isShopOpen, setIsShopOpen] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
@@ -34,6 +37,22 @@ function App() {
     pursuit.applySlow,
     pursuit.applyKnockback,
   );
+  const slotUpgradeCost = getSlotUpgradeCost(slotUpgradeCount);
+
+  const handleSlotUpgrade = () => {
+    const purchase = purchaseSlotUpgrade({
+      coins: combat.coins,
+      maxPartySlots,
+      upgradeCount: slotUpgradeCount,
+    });
+
+    if (!purchase.purchased || !combat.spendCoins(purchase.cost)) {
+      return;
+    }
+
+    setMaxPartySlots(purchase.maxPartySlots);
+    setSlotUpgradeCount(purchase.upgradeCount);
+  };
 
   useEffect(() => {
     const survivingFollowerIds = combat.party.followers.map(({ id }) => id);
@@ -95,7 +114,36 @@ function App() {
         <span>
           Fila: {combat.party.followers.length + 1}/{maxPartySlots}
         </span>
+        <button type="button" onClick={() => setIsShopOpen(true)}>
+          Loja
+        </button>
       </section>
+      {isShopOpen && (
+        <section
+          className="shop-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="shop-title"
+        >
+          <button
+            className="shop-close"
+            type="button"
+            aria-label="Fechar loja"
+            onClick={() => setIsShopOpen(false)}
+          >
+            ×
+          </button>
+          <h2 id="shop-title">Loja</h2>
+          <p>+1 Slot de Fila — {slotUpgradeCost} moedas</p>
+          <button
+            type="button"
+            disabled={combat.coins < slotUpgradeCost}
+            onClick={handleSlotUpgrade}
+          >
+            Comprar +1 slot
+          </button>
+        </section>
+      )}
       {isGameOver && <p role="alert">Game Over</p>}
     </main>
   );

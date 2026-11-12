@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createWarriorLeader, WARRIOR_CONFIG } from '../game/classes';
 import {
   advanceIceProjectile,
@@ -201,6 +201,18 @@ export function usePartyCombat(
   const nextShockwaveId = useRef(0);
   const nextSkeletonId = useRef(0);
   const nextCoinEffectId = useRef(0);
+
+  const spendCoins = useCallback(
+    (amount) => {
+      if (amount < 0 || coins < amount) {
+        return false;
+      }
+
+      setCoins((currentCoins) => Math.max(0, currentCoins - amount));
+      return true;
+    },
+    [coins],
+  );
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -519,6 +531,7 @@ export function usePartyCombat(
     shockwaves,
     coinDrops: health.coinDrops || [],
     coins,
+    spendCoins,
     coinPickupEffects,
     skeletons: skeletons
       .map((skeleton) => ({
