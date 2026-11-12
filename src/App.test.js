@@ -1,6 +1,27 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 
+let canvasContext;
+
+beforeEach(() => {
+  canvasContext = {
+    arc: jest.fn(),
+    beginPath: jest.fn(),
+    clearRect: jest.fn(),
+    fill: jest.fn(),
+    lineTo: jest.fn(),
+    moveTo: jest.fn(),
+    stroke: jest.fn(),
+  };
+  jest
+    .spyOn(HTMLCanvasElement.prototype, 'getContext')
+    .mockReturnValue(canvasContext);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 test('renders the centered game canvas at 800 by 600 pixels', () => {
   render(<App />);
 
@@ -18,4 +39,12 @@ test('updates the game direction from keyboard input', () => {
 
   expect(canvas).toHaveAttribute('data-direction-x', '0');
   expect(canvas).toHaveAttribute('data-direction-y', '-1');
+});
+
+test('renders party members on the canvas', () => {
+  render(<App />);
+
+  expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 800, 600);
+  expect(canvasContext.arc).toHaveBeenCalledTimes(4);
+  expect(canvasContext.stroke).toHaveBeenCalledTimes(1);
 });
