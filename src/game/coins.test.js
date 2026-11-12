@@ -4,6 +4,9 @@ import {
   COIN_LIFETIME,
   collectCoinDrops,
   createCoinDrop,
+  CoinEntity,
+  MAGNET_RADIUS,
+  MAGNET_SPEED,
 } from './coins';
 
 test('drops a coin at the enemy position with a random value from one to five', () => {
@@ -59,4 +62,27 @@ test('collects coins when a party member overlaps them', () => {
   expect(result.collected[0].id).toBe('coin-1');
   expect(result.remaining[0].id).toBe('coin-2');
   expect(result.remaining[0].timeRemaining).toBeCloseTo(4.9);
+});
+
+test('magnetically attracts coins towards the leader when within magnet radius', () => {
+  const coins = [
+    { id: 'coin-magnet', x: 50, y: 0, value: 5, timeRemaining: 8 },
+  ];
+  const party = {
+    leader: { x: 0, y: 0, radius: 12 },
+    followers: [],
+  };
+  const result = collectCoinDrops(coins, party, 0.1);
+
+  expect(result.collected).toHaveLength(0);
+  expect(result.remaining[0].x).toBeLessThan(50);
+  expect(result.remaining[0].x).toBeCloseTo(50 - MAGNET_SPEED * 0.1);
+});
+
+test('CoinEntity is an alias for createCoinDrop', () => {
+  const enemy = { id: 'enemy-1', x: 10, y: 20 };
+  const coin = CoinEntity(enemy, () => 0.5);
+  expect(coin.id).toBe('coin-enemy-1');
+  expect(coin.x).toBe(10);
+  expect(coin.y).toBe(20);
 });

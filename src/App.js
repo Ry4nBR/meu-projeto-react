@@ -156,7 +156,7 @@ function GameSession({ onRestart }) {
     if (combat.isGameOver) {
       setIsGameOver(true);
     }
-  }, [combat, followerIds, party.leader]);
+  }, [combat, followerIds, party.leader, classById]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -202,6 +202,7 @@ function GameSession({ onRestart }) {
       />
       <section className="game-hud" aria-label="Status do jogo">
         <span>Wave: {waveInfo.wave}</span>
+        <span>Inimigos restantes: {combat.enemies.length}</span>
         <span>Próxima onda: {waveInfo.countdown}s</span>
         <span>Moedas: {combat.coins}</span>
         <span>

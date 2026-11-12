@@ -103,6 +103,7 @@ test('shows the party size and initial capacity in the game HUD', () => {
   render(<App />);
 
   expect(screen.getByText('Fila: 5/7')).toBeInTheDocument();
+  expect(screen.getByText(/Inimigos restantes:/)).toBeInTheDocument();
 });
 
 test('opens the slot upgrade shop and disables purchases without enough coins', () => {

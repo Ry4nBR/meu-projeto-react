@@ -1,6 +1,8 @@
 export const COIN_LIFETIME = 10;
 export const COIN_RADIUS = 6;
 export const PICKUP_EFFECT_DURATION = 0.35;
+export const MAGNET_RADIUS = 75;
+export const MAGNET_SPEED = 180;
 
 export function createCoinDrop(enemy, random = Math.random) {
   return {
@@ -11,6 +13,8 @@ export function createCoinDrop(enemy, random = Math.random) {
     timeRemaining: COIN_LIFETIME,
   };
 }
+
+export const CoinEntity = createCoinDrop;
 
 export function applyEnemyDamage(health, enemy, damage, random = Math.random) {
   const enemyHealth = health.enemies[enemy.id] || {
@@ -57,16 +61,33 @@ export function collectCoinDrops(coins, party, deltaTime = 0) {
   const activeCoins = advanceCoinDrops(coins, deltaTime);
 
   activeCoins.forEach((coin) => {
+    let currentCoin = coin;
+
+    if (party.leader && deltaTime > 0) {
+      const dx = party.leader.x - currentCoin.x;
+      const dy = party.leader.y - currentCoin.y;
+      const distance = Math.hypot(dx, dy);
+
+      if (distance <= MAGNET_RADIUS && distance > 0) {
+        const pull = Math.min(distance, MAGNET_SPEED * deltaTime);
+        currentCoin = {
+          ...currentCoin,
+          x: currentCoin.x + (dx / distance) * pull,
+          y: currentCoin.y + (dy / distance) * pull,
+        };
+      }
+    }
+
     const collector = members.find(
       (member) =>
-        Math.hypot(member.x - coin.x, member.y - coin.y) <=
+        Math.hypot(member.x - currentCoin.x, member.y - currentCoin.y) <=
         (member.radius || 12) + COIN_RADIUS,
     );
 
     if (collector) {
-      collected.push(coin);
+      collected.push(currentCoin);
     } else {
-      remaining.push(coin);
+      remaining.push(currentCoin);
     }
   });
 
