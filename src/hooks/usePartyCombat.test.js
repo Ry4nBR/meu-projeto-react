@@ -3,6 +3,7 @@ import {
   applyContactDamage,
   applyIceProjectileDamage,
   applyWarriorAttack,
+  applyWindShockwaveDamage,
   usePartyCombat,
 } from './usePartyCombat';
 import {
@@ -12,9 +13,16 @@ import {
   ICE_WITCH_CONFIG,
 } from '../game/iceWitch';
 import { DRUID_CONFIG } from '../game/druid';
+import { WIND_MAGE_CONFIG } from '../game/windMage';
 
-function CombatHarness({ party, enemies, applySlow }) {
-  const combat = usePartyCombat(party, enemies, true, applySlow);
+function CombatHarness({ party, enemies, applySlow, applyKnockback }) {
+  const combat = usePartyCombat(
+    party,
+    enemies,
+    true,
+    applySlow,
+    applyKnockback,
+  );
   return <output aria-label="combat">{JSON.stringify(combat)}</output>;
 }
 
@@ -227,4 +235,61 @@ test('Druid heals the lowest-health ally every two seconds and emits a green aur
       timeRemaining: DRUID_CONFIG.auraDuration,
     }),
   ]);
+});
+
+test('Wind Mage damages enemies caught by its shockwave and applies a 60-pixel knockback', () => {
+  const applyKnockback = jest.fn();
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 400, y: 300 },
+        followers: [
+          { id: 'follower-0', x: 200, y: 200 },
+          { id: 'follower-1', x: 300, y: 300 },
+          { id: 'follower-2', x: 100, y: 100 },
+        ],
+      }}
+      enemies={[
+        {
+          id: 'wind-target',
+          x: 150,
+          y: 100,
+          hp: 100,
+          maxHp: 100,
+          atk: 0,
+          radius: 10,
+        },
+      ]}
+      applyKnockback={applyKnockback}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  for (let frame = 1; frame <= 6; frame += 1) {
+    act(() => scheduledFrame(frame * 500));
+  }
+
+  const combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.party.followers[2].classType).toBe('wind-mage');
+  expect(combat.enemies[0].hp).toBe(
+    100 - 2 * ICE_WITCH_CONFIG.atk - WIND_MAGE_CONFIG.atk,
+  );
+  expect(applyKnockback).toHaveBeenCalledTimes(1);
+  expect(applyKnockback).toHaveBeenCalledWith(
+    'wind-target',
+    { x: 100, y: 100 },
+  );
+
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {},
+    enemies: {},
+  };
+  expect(
+    applyWindShockwaveDamage(health, {
+      id: 'wind-target',
+      hp: 100,
+      maxHp: 100,
+    }).enemies['wind-target'].hp,
+  ).toBe(100 - WIND_MAGE_CONFIG.atk);
 });

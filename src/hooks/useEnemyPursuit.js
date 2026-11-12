@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { createEnemy } from '../game/entities';
 import { ICE_WITCH_CONFIG } from '../game/iceWitch';
+import { getWindKnockbackPosition } from '../game/windMage';
 import { useGameLoop } from './useGameLoop';
 
 const INITIAL_ENEMIES = [
@@ -86,6 +87,15 @@ export function useEnemyPursuit(party, active = true) {
       ),
     );
   }, []);
+  const applyKnockback = useCallback((enemyId, origin) => {
+    setEnemies((currentEnemies) =>
+      currentEnemies.map((enemy) =>
+        enemy.id === enemyId
+          ? { ...enemy, ...getWindKnockbackPosition(enemy, origin) }
+          : enemy,
+      ),
+    );
+  }, []);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -97,5 +107,5 @@ export function useEnemyPursuit(party, active = true) {
     );
   }, active);
 
-  return { enemies, applySlow };
+  return { enemies, applySlow, applyKnockback };
 }

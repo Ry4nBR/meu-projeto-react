@@ -30,6 +30,7 @@ export function drawParty(
   enemies = [],
   projectiles = [],
   healingEffects = [],
+  shockwaves = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -87,6 +88,24 @@ export function drawParty(
     context.lineWidth = 3;
     context.beginPath();
     context.arc(effect.x, effect.y, 20, 0, Math.PI * 2);
+    context.stroke();
+  });
+
+  shockwaves.forEach((shockwave) => {
+    context.globalAlpha = Math.max(
+      0,
+      1 - shockwave.radius / 120,
+    );
+    context.strokeStyle = '#b7f7ff';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.arc(
+      shockwave.x,
+      shockwave.y,
+      shockwave.radius,
+      0,
+      Math.PI * 2,
+    );
     context.stroke();
   });
   context.globalAlpha = 1;

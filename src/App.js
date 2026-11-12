@@ -23,6 +23,7 @@ function App() {
     enemies,
     !isGameOver,
     pursuit.applySlow,
+    pursuit.applyKnockback,
   );
 
   useEffect(() => {
@@ -55,6 +56,7 @@ function App() {
       combat.enemies,
       combat.projectiles,
       combat.healingEffects,
+      combat.shockwaves,
     );
   }, [combat]);
 

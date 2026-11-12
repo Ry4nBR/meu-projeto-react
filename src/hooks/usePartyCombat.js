@@ -7,6 +7,12 @@ import {
   ICE_WITCH_CONFIG,
 } from '../game/iceWitch';
 import { createDruid, DRUID_CONFIG, healMostWounded } from '../game/druid';
+import {
+  advanceWindShockwave,
+  createWindMage,
+  createWindShockwave,
+  WIND_MAGE_CONFIG,
+} from '../game/windMage';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -142,24 +148,46 @@ function applyIceProjectileDamage(health, enemy) {
   };
 }
 
+function applyWindShockwaveDamage(health, enemy) {
+  const enemyHealth = health.enemies[enemy.id] || {
+    hp: enemy.hp,
+    maxHp: enemy.maxHp,
+  };
+  return {
+    ...health,
+    enemies: {
+      ...health.enemies,
+      [enemy.id]: {
+        ...enemyHealth,
+        hp: Math.max(0, enemyHealth.hp - WIND_MAGE_CONFIG.atk),
+      },
+    },
+  };
+}
+
 export function usePartyCombat(
   party,
   enemies,
   active = true,
   applyEnemySlow = () => {},
+  applyEnemyKnockback = () => {},
 ) {
   const [health, setHealth] = useState(() =>
     createInitialHealth(party.followers),
   );
   const [projectiles, setProjectiles] = useState([]);
   const [healingEffects, setHealingEffects] = useState([]);
+  const [shockwaves, setShockwaves] = useState([]);
   const projectilesRef = useRef([]);
+  const shockwavesRef = useRef([]);
   const damageTimer = useRef(0);
   const warriorTimer = useRef(0);
   const iceWitchTimer = useRef(0);
   const druidTimer = useRef(0);
+  const windMageTimer = useRef(0);
   const nextProjectileId = useRef(0);
   const nextHealingEffectId = useRef(0);
+  const nextShockwaveId = useRef(0);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -173,10 +201,13 @@ export function usePartyCombat(
     warriorTimer.current += deltaTime;
     iceWitchTimer.current += deltaTime;
     druidTimer.current += deltaTime;
+    windMageTimer.current += deltaTime;
     const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
     const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
     const canCast = iceWitchTimer.current >= ICE_WITCH_CONFIG.cooldown;
     const canHeal = druidTimer.current >= DRUID_CONFIG.cooldown;
+    const canShockwave =
+      windMageTimer.current >= WIND_MAGE_CONFIG.cooldown;
 
     if (canDamage) {
       damageTimer.current %= DAMAGE_INTERVAL;
@@ -189,6 +220,9 @@ export function usePartyCombat(
     }
     if (canHeal) {
       druidTimer.current %= DRUID_CONFIG.cooldown;
+    }
+    if (canShockwave) {
+      windMageTimer.current %= WIND_MAGE_CONFIG.cooldown;
     }
 
     setHealingEffects((currentEffects) => {
@@ -247,6 +281,48 @@ export function usePartyCombat(
       }
     }
 
+    const windMage = party.followers.find(
+      ({ id }) =>
+        id === 'follower-2' && health.followers[id]?.hp !== 0,
+    );
+    let launchedShockwave = null;
+    if (canShockwave && windMage) {
+      launchedShockwave = createWindShockwave(
+        windMage,
+        `wind-shockwave-${nextShockwaveId.current}`,
+      );
+      nextShockwaveId.current += 1;
+    }
+
+    if (shockwavesRef.current.length > 0 || launchedShockwave) {
+      const currentShockwaves = launchedShockwave
+        ? [...shockwavesRef.current, launchedShockwave]
+        : shockwavesRef.current;
+      const hits = [];
+      const nextShockwaves = currentShockwaves.flatMap((shockwave) => {
+        const result = advanceWindShockwave(
+          shockwave,
+          livingEnemies,
+          deltaTime,
+        );
+        hits.push(...result.hits);
+        return result.shockwave ? [result.shockwave] : [];
+      });
+
+      shockwavesRef.current = nextShockwaves;
+      setShockwaves(nextShockwaves);
+
+      hits.forEach(({ enemyId, origin }) => {
+        const enemy = livingEnemies.find(({ id }) => id === enemyId);
+        if (enemy) {
+          setHealth((currentHealth) =>
+            applyWindShockwaveDamage(currentHealth, enemy),
+          );
+          applyEnemyKnockback(enemyId, origin);
+        }
+      });
+    }
+
     let launchedProjectile = null;
     const iceWitch = party.followers.find(
       ({ id }) =>
@@ -295,6 +371,7 @@ export function usePartyCombat(
 
   const iceWitch = createIceWitch();
   const druid = createDruid();
+  const windMage = createWindMage();
   return {
     party: {
       ...party,
@@ -308,6 +385,7 @@ export function usePartyCombat(
         .map((follower) => ({
           ...(follower.id === iceWitch.id ? iceWitch : {}),
           ...(follower.id === druid.id ? druid : {}),
+          ...(follower.id === windMage.id ? windMage : {}),
           ...follower,
           ...(health.followers[follower.id] || {
             hp: INITIAL_HP,
@@ -329,6 +407,7 @@ export function usePartyCombat(
       .filter((enemy) => enemy.hp > 0),
     projectiles,
     healingEffects,
+    shockwaves,
     isGameOver: health.leader.hp <= 0,
   };
 }
@@ -336,5 +415,6 @@ export function usePartyCombat(
 export {
   applyContactDamage,
   applyIceProjectileDamage,
+  applyWindShockwaveDamage,
   applyWarriorAttack,
 };

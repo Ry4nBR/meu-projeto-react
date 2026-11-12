@@ -98,3 +98,27 @@ test('draws a temporary green healing aura', () => {
   expect(context.strokeStyle).toBe('#38ef7d');
   expect(context.globalAlpha).toBe(1);
 });
+
+test('draws an expanding Wind Mage shockwave', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [
+    { x: 40, y: 50, radius: 48 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    48,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.strokeStyle).toBe('#b7f7ff');
+  expect(context.globalAlpha).toBe(1);
+});
