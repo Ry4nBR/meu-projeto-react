@@ -16,6 +16,7 @@ function App() {
     'follower-2',
     'follower-3',
   ]);
+  const [maxPartySlots] = useState(7);
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
@@ -91,6 +92,9 @@ function App() {
         <span>Wave: {waveInfo.wave}</span>
         <span>Próxima onda: {waveInfo.countdown}s</span>
         <span>Moedas: {combat.coins}</span>
+        <span>
+          Fila: {combat.party.followers.length + 1}/{maxPartySlots}
+        </span>
       </section>
       {isGameOver && <p role="alert">Game Over</p>}
     </main>

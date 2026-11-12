@@ -50,3 +50,9 @@ test('renders party members on the canvas', () => {
   expect(canvasContext.fillRect).toHaveBeenCalledTimes(20);
   expect(canvasContext.stroke).toHaveBeenCalledTimes(1);
 });
+
+test('shows the party size and initial capacity in the game HUD', () => {
+  render(<App />);
+
+  expect(screen.getByText('Fila: 5/7')).toBeInTheDocument();
+});
