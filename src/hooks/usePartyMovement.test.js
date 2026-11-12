@@ -1,5 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { usePartyMovement } from './usePartyMovement';
+import {
+  getFollowerTargetDistance,
+  getPositionAtDistance,
+  usePartyMovement,
+} from './usePartyMovement';
 import { usePlayerDirection } from './usePlayerDirection';
 
 function PartyHarness() {
@@ -69,4 +73,44 @@ test('records turns in the position history for followers to trace', () => {
       (position) => position.x === 520 && position.y === 300,
     ),
   ).toBe(true);
+});
+
+test('uses fixed distance offsets and keeps the party on the same path through turns', () => {
+  expect(getFollowerTargetDistance(123, 0, 40)).toBe(83);
+  expect(getFollowerTargetDistance(123, 3, 40)).toBe(-37);
+  expect(
+    getPositionAtDistance(
+      [
+        { distance: 0, x: 0, y: 0 },
+        { distance: 50, x: 50, y: 0 },
+        { distance: 100, x: 50, y: 50 },
+      ],
+      75,
+    ),
+  ).toEqual({ x: 50, y: 25 });
+
+  render(<PartyHarness />);
+  stepFrame(0);
+  stepFrame(333);
+  stepFrame(666);
+  fireEvent.keyDown(window, { key: 'ArrowDown' });
+  stepFrame(999);
+  stepFrame(1332);
+
+  const party = JSON.parse(screen.getByLabelText('party').textContent);
+
+  expect(party.leader.x).toBeLessThan(500);
+  expect(party.leader.y).toBeGreaterThan(300);
+  party.followers.forEach((follower, index) => {
+    expect({ x: follower.x, y: follower.y }).toEqual(
+      getPositionAtDistance(
+        party.positionHistory,
+        getFollowerTargetDistance(
+          party.distanceTravelled,
+          index,
+          40,
+        ),
+      ),
+    );
+  });
 });

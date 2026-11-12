@@ -49,7 +49,7 @@ function createInitialParty(
   };
 }
 
-function getPositionAtDistance(positionHistory, targetDistance) {
+export function getPositionAtDistance(positionHistory, targetDistance) {
   for (let index = 1; index < positionHistory.length; index += 1) {
     const previous = positionHistory[index - 1];
     const next = positionHistory[index];
@@ -83,6 +83,10 @@ function trimPositionHistory(positionHistory, oldestNeededDistance) {
   }
 }
 
+export function getFollowerTargetDistance(distanceTravelled, index, spacing) {
+  return distanceTravelled - (index + 1) * spacing;
+}
+
 function advanceParty(
   party,
   direction,
@@ -107,7 +111,7 @@ function advanceParty(
     ...(classById[id] || {}),
     ...getPositionAtDistance(
       positionHistory,
-      distanceTravelled - spacing * (index + 1),
+      getFollowerTargetDistance(distanceTravelled, index, spacing),
     ),
   }));
 
