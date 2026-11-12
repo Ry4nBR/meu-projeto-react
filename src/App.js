@@ -11,6 +11,7 @@ import { usePlayerDirection } from './hooks/usePlayerDirection';
 import { useWaveManager } from './hooks/useWaveManager';
 import { useRecruitSpawns } from './hooks/useRecruitSpawns';
 import GameOverScreen from './components/GameOverScreen';
+import { hasCanvasBoundaryCollision } from './game/boundaries';
 
 function GameSession({ onRestart }) {
   const canvasRef = useRef(null);
@@ -119,6 +120,17 @@ function GameSession({ onRestart }) {
   };
 
   useEffect(() => {
+    if (
+      hasCanvasBoundaryCollision(
+        party.leader,
+        canvasRef.current.width,
+        canvasRef.current.height,
+      )
+    ) {
+      setIsGameOver(true);
+      return;
+    }
+
     const survivingFollowerIds = combat.party.followers.map(({ id }) => id);
     if (
       survivingFollowerIds.length !== followerIds.length ||
@@ -130,7 +142,7 @@ function GameSession({ onRestart }) {
     if (combat.isGameOver) {
       setIsGameOver(true);
     }
-  }, [combat, followerIds]);
+  }, [combat, followerIds, party.leader]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
