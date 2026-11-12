@@ -1,4 +1,5 @@
 import { PARTICLE_LIFETIME } from './particles';
+import { drawArenaBorder } from './boundaries';
 
 const LEADER_COLOR = '#ffd700';
 const FOLLOWER_COLOR = '#4682b4';
@@ -40,6 +41,7 @@ export function drawParty(
   particles = [],
 ) {
   context.clearRect(0, 0, width, height);
+  drawArenaBorder(context, width, height);
 
   party.followers.forEach((follower) => {
     if (follower.classType === 'golden-paladin') {
