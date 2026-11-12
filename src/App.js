@@ -1,10 +1,12 @@
 import './App.css';
 import { useEffect, useRef, useState } from 'react';
 import { drawParty } from './game/renderParty';
+import { createWaveEnemies } from './game/waves';
 import { useEnemyPursuit } from './hooks/useEnemyPursuit';
 import { usePartyCombat } from './hooks/usePartyCombat';
 import { usePartyMovement } from './hooks/usePartyMovement';
 import { usePlayerDirection } from './hooks/usePlayerDirection';
+import { useWaveManager } from './hooks/useWaveManager';
 
 function App() {
   const canvasRef = useRef(null);
@@ -17,7 +19,12 @@ function App() {
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
-  const pursuit = useEnemyPursuit(party, !isGameOver);
+  const pursuit = useEnemyPursuit(
+    party,
+    !isGameOver,
+    () => createWaveEnemies(1),
+  );
+  const waveInfo = useWaveManager(pursuit.spawnEnemies, !isGameOver);
   const enemies = pursuit.enemies;
   const combat = usePartyCombat(
     party,
@@ -77,6 +84,10 @@ function App() {
         data-enemy-count={combat.enemies.length}
         aria-label="Área do jogo"
       />
+      <section className="game-hud" aria-label="Status do jogo">
+        <span>Wave: {waveInfo.wave}</span>
+        <span>Próxima onda: {waveInfo.countdown}s</span>
+      </section>
       {isGameOver && <p role="alert">Game Over</p>}
     </main>
   );

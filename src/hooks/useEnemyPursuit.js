@@ -73,8 +73,15 @@ export function advanceEnemies(enemies, party, deltaTime) {
   });
 }
 
-export function useEnemyPursuit(party, active = true) {
-  const [enemies, setEnemies] = useState(createInitialEnemies);
+export function useEnemyPursuit(
+  party,
+  active = true,
+  initialEnemies = createInitialEnemies,
+) {
+  const [enemies, setEnemies] = useState(initialEnemies);
+  const spawnEnemies = useCallback((newEnemies) => {
+    setEnemies((currentEnemies) => [...currentEnemies, ...newEnemies]);
+  }, []);
   const applySlow = useCallback((enemyId, duration) => {
     setEnemies((currentEnemies) =>
       currentEnemies.map((enemy) =>
@@ -107,5 +114,5 @@ export function useEnemyPursuit(party, active = true) {
     );
   }, active);
 
-  return { enemies, applySlow, applyKnockback };
+  return { enemies, applySlow, applyKnockback, spawnEnemies };
 }

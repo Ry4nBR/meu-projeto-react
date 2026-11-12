@@ -1,9 +1,19 @@
 .App {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: #1a1a1a;
+}
+
+.game-hud {
+  position: absolute;
+  top: 16px;
+  display: flex;
+  gap: 24px;
+  color: #fff;
+  font-weight: 600;
 }
 
 .game-canvas {
