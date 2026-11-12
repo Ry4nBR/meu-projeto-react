@@ -18,7 +18,7 @@ export function useGameLoop(onFrame) {
         const elapsed = timestamp - lastFrameTimestamp;
 
         if (elapsed >= FRAME_DURATION) {
-          lastFrameTimestamp = timestamp - (elapsed % FRAME_DURATION);
+          lastFrameTimestamp = timestamp;
           onFrameRef.current(elapsed / 1000);
         }
       }
