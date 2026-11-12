@@ -34,11 +34,12 @@ export function drawParty(
   skeletons = [],
   coins = [],
   coinPickupEffects = [],
+  recruits = [],
 ) {
   context.clearRect(0, 0, width, height);
 
   party.followers.forEach((follower) => {
-    context.fillStyle = FOLLOWER_COLOR;
+    context.fillStyle = follower.color || FOLLOWER_COLOR;
     context.beginPath();
     context.arc(follower.x, follower.y, FOLLOWER_RADIUS, 0, Math.PI * 2);
     context.fill();
@@ -147,6 +148,17 @@ export function drawParty(
     context.beginPath();
     context.arc(effect.x, effect.y, 14, 0, Math.PI * 2);
     context.stroke();
+  });
+
+  recruits.forEach((recruit) => {
+    context.fillStyle = recruit.color || '#ffffff';
+    context.beginPath();
+    context.arc(recruit.x, recruit.y, recruit.radius || 11, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#ffffff';
+    context.font = '10px sans-serif';
+    context.textAlign = 'center';
+    context.fillText(recruit.name, recruit.x, recruit.y - 16);
   });
   context.globalAlpha = 1;
 }

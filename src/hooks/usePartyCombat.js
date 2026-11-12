@@ -267,8 +267,9 @@ export function usePartyCombat(
     druidTimer.current += deltaTime;
     windMageTimer.current += deltaTime;
     const necromancer = party.followers.find(
-      ({ id }) =>
-        id === 'follower-3' && health.followers[id]?.hp !== 0,
+      ({ id, classType }) =>
+        (id === 'follower-3' || classType === 'necromancer') &&
+        health.followers[id]?.hp !== 0,
     );
     if (necromancer) {
       necromancerTimer.current += deltaTime;
@@ -369,8 +370,8 @@ export function usePartyCombat(
         if (
           canHeal &&
           party.followers.some(
-            ({ id }) =>
-              id === 'follower-1' &&
+            ({ id, classType }) =>
+              (id === 'follower-1' || classType === 'druid') &&
               currentHealth.followers[id]?.hp !== 0,
           )
         ) {
@@ -381,8 +382,9 @@ export function usePartyCombat(
     }
 
     const druid = party.followers.find(
-      ({ id }) =>
-        id === 'follower-1' && health.followers[id]?.hp !== 0,
+      ({ id, classType }) =>
+        (id === 'follower-1' || classType === 'druid') &&
+        health.followers[id]?.hp !== 0,
     );
     if (canHeal && druid) {
       const { target } = healMostWounded(health, party);
@@ -401,8 +403,9 @@ export function usePartyCombat(
     }
 
     const windMage = party.followers.find(
-      ({ id }) =>
-        id === 'follower-2' && health.followers[id]?.hp !== 0,
+      ({ id, classType }) =>
+        (id === 'follower-2' || classType === 'wind-mage') &&
+        health.followers[id]?.hp !== 0,
     );
     let launchedShockwave = null;
     if (canShockwave && windMage) {
@@ -444,8 +447,9 @@ export function usePartyCombat(
 
     let launchedProjectile = null;
     const iceWitch = party.followers.find(
-      ({ id }) =>
-        id === 'follower-0' && health.followers[id]?.hp !== 0,
+      ({ id, classType }) =>
+        (id === 'follower-0' || classType === 'ice-witch') &&
+        health.followers[id]?.hp !== 0,
     );
     if (canCast && iceWitch) {
       launchedProjectile = createIceProjectile(iceWitch, livingEnemies);

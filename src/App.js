@@ -3,11 +3,13 @@ import { useEffect, useRef, useState } from 'react';
 import { drawParty } from './game/renderParty';
 import { createWaveEnemies } from './game/waves';
 import { getSlotUpgradeCost, purchaseSlotUpgrade } from './game/shop';
+import { addPartyMember } from './game/partyRoster';
 import { useEnemyPursuit } from './hooks/useEnemyPursuit';
 import { usePartyCombat } from './hooks/usePartyCombat';
 import { usePartyMovement } from './hooks/usePartyMovement';
 import { usePlayerDirection } from './hooks/usePlayerDirection';
 import { useWaveManager } from './hooks/useWaveManager';
+import { useRecruitSpawns } from './hooks/useRecruitSpawns';
 
 function App() {
   const canvasRef = useRef(null);
@@ -17,18 +19,50 @@ function App() {
     'follower-2',
     'follower-3',
   ]);
+  const [classById, setClassById] = useState({
+    'follower-0': { classType: 'ice-witch', name: 'Bruxa de Gelo' },
+    'follower-1': { classType: 'druid', name: 'Druida' },
+    'follower-2': { classType: 'wind-mage', name: 'Mago de Vento' },
+    'follower-3': { classType: 'necromancer', name: 'Necromante' },
+  });
   const [maxPartySlots, setMaxPartySlots] = useState(7);
   const [slotUpgradeCount, setSlotUpgradeCount] = useState(0);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
-  const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
+  const party = usePartyMovement(direction, {
+    followerIds,
+    classById,
+    active: !isGameOver,
+  });
   const pursuit = useEnemyPursuit(
     party,
     !isGameOver,
     () => createWaveEnemies(1),
   );
   const waveInfo = useWaveManager(pursuit.spawnEnemies, !isGameOver);
+  const recruits = useRecruitSpawns(
+    party,
+    maxPartySlots,
+    (recruit) => {
+      const result = addPartyMember(
+        followerIds,
+        recruit.id,
+        maxPartySlots,
+      );
+      if (result.added) {
+        setFollowerIds(result.followerIds);
+        setClassById((current) => ({
+          ...current,
+          [recruit.id]: {
+            classType: recruit.classType,
+            name: recruit.name,
+          },
+        }));
+      }
+    },
+    !isGameOver,
+  );
   const enemies = pursuit.enemies;
   const combat = usePartyCombat(
     party,
@@ -88,8 +122,10 @@ function App() {
       combat.skeletons,
       combat.coinDrops,
       combat.coinPickupEffects,
+      recruits,
+      recruits,
     );
-  }, [combat]);
+  }, [combat, recruits]);
 
   return (
     <main className="App">
@@ -105,6 +141,7 @@ function App() {
         data-follower-count={party.followers.length}
         data-enemy-count={combat.enemies.length}
         data-coins={combat.coins}
+        data-recruit-count={recruits.length}
         aria-label="Área do jogo"
       />
       <section className="game-hud" aria-label="Status do jogo">
