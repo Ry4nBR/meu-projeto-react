@@ -28,6 +28,7 @@ export function drawParty(
   width = 800,
   height = 600,
   enemies = [],
+  projectiles = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -62,10 +63,17 @@ export function drawParty(
   context.stroke();
 
   enemies.forEach((enemy) => {
-    context.fillStyle = '#d9534f';
+    context.fillStyle = enemy.slowRemaining > 0 ? '#78d9ff' : '#d9534f';
     context.beginPath();
     context.arc(enemy.x, enemy.y, ENEMY_RADIUS, 0, Math.PI * 2);
     context.fill();
     drawHealthBar(context, enemy, ENEMY_RADIUS);
+  });
+
+  projectiles.forEach((projectile) => {
+    context.fillStyle = '#9be7ff';
+    context.beginPath();
+    context.arc(projectile.x, projectile.y, 5, 0, Math.PI * 2);
+    context.fill();
   });
 }

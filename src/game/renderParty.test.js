@@ -53,3 +53,24 @@ test('draws followers in blue, the leader in gold, and a direction indicator', (
   expect(context.lineTo).toHaveBeenCalledWith(100, 96);
   expect(context.stroke).toHaveBeenCalledTimes(1);
 });
+
+test('draws an ice projectile on the canvas', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [{ x: 40, y: 50 }]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    5,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.fillStyle).toBe('#9be7ff');
+});

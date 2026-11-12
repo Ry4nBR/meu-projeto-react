@@ -16,8 +16,14 @@ function App() {
   const [isGameOver, setIsGameOver] = useState(false);
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction, { followerIds, active: !isGameOver });
-  const enemies = useEnemyPursuit(party, !isGameOver);
-  const combat = usePartyCombat(party, enemies, !isGameOver);
+  const pursuit = useEnemyPursuit(party, !isGameOver);
+  const enemies = pursuit.enemies;
+  const combat = usePartyCombat(
+    party,
+    enemies,
+    !isGameOver,
+    pursuit.applySlow,
+  );
 
   useEffect(() => {
     const survivingFollowerIds = combat.party.followers.map(({ id }) => id);
@@ -41,7 +47,14 @@ function App() {
       throw new Error('O navegador não conseguiu criar o contexto 2D do canvas.');
     }
 
-    drawParty(context, combat.party, canvas.width, canvas.height, combat.enemies);
+    drawParty(
+      context,
+      combat.party,
+      canvas.width,
+      canvas.height,
+      combat.enemies,
+      combat.projectiles,
+    );
   }, [combat]);
 
   return (
@@ -56,7 +69,7 @@ function App() {
         data-leader-x={party.leader.x}
         data-leader-y={party.leader.y}
         data-follower-count={party.followers.length}
-        data-enemy-count={enemies.length}
+        data-enemy-count={combat.enemies.length}
         aria-label="Área do jogo"
       />
       {isGameOver && <p role="alert">Game Over</p>}

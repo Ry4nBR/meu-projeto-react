@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createEnemy } from '../game/entities';
+import { ICE_WITCH_CONFIG } from '../game/iceWitch';
 import { useGameLoop } from './useGameLoop';
 
 const INITIAL_ENEMIES = [
@@ -21,6 +22,7 @@ function createInitialEnemies() {
       maxHp: ENEMY_HP,
       atk: ENEMY_ATTACK,
       speed: ENEMY_SPEED,
+      slowRemaining: 0,
     }),
   );
 }
@@ -41,21 +43,49 @@ export function advanceEnemies(enemies, party, deltaTime) {
     const offsetY = target.y - enemy.y;
     const distance = Math.hypot(offsetX, offsetY);
 
-    if (distance === 0 || deltaTime <= 0) {
+    if (deltaTime <= 0) {
       return enemy;
     }
 
-    const movement = Math.min(enemy.speed * deltaTime, distance);
+    const slowedDuration = Math.min(
+      enemy.slowRemaining || 0,
+      deltaTime,
+    );
+    if (distance === 0) {
+      return {
+        ...enemy,
+        slowRemaining: Math.max(0, (enemy.slowRemaining || 0) - deltaTime),
+      };
+    }
+
+    const movement = Math.min(
+      enemy.speed *
+        (deltaTime - slowedDuration * (1 - ICE_WITCH_CONFIG.slowFactor)),
+      distance,
+    );
     return {
       ...enemy,
       x: enemy.x + (offsetX / distance) * movement,
       y: enemy.y + (offsetY / distance) * movement,
+      slowRemaining: Math.max(0, (enemy.slowRemaining || 0) - deltaTime),
     };
   });
 }
 
 export function useEnemyPursuit(party, active = true) {
   const [enemies, setEnemies] = useState(createInitialEnemies);
+  const applySlow = useCallback((enemyId, duration) => {
+    setEnemies((currentEnemies) =>
+      currentEnemies.map((enemy) =>
+        enemy.id === enemyId
+          ? {
+              ...enemy,
+              slowRemaining: Math.max(enemy.slowRemaining || 0, duration),
+            }
+          : enemy,
+      ),
+    );
+  }, []);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
@@ -67,5 +97,5 @@ export function useEnemyPursuit(party, active = true) {
     );
   }, active);
 
-  return enemies;
+  return { enemies, applySlow };
 }

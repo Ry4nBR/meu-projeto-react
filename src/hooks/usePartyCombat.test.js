@@ -1,12 +1,19 @@
 import { act, render, screen } from '@testing-library/react';
 import {
   applyContactDamage,
+  applyIceProjectileDamage,
   applyWarriorAttack,
   usePartyCombat,
 } from './usePartyCombat';
+import {
+  advanceIceProjectile,
+  createIceProjectile,
+  createIceWitch,
+  ICE_WITCH_CONFIG,
+} from '../game/iceWitch';
 
-function CombatHarness({ party, enemies }) {
-  const combat = usePartyCombat(party, enemies);
+function CombatHarness({ party, enemies, applySlow }) {
+  const combat = usePartyCombat(party, enemies, true, applySlow);
   return <output aria-label="combat">{JSON.stringify(combat)}</output>;
 }
 
@@ -122,4 +129,60 @@ test('Warrior attacks enemies within melee range every second', () => {
     ...health,
     enemies: { near: { hp: 30, maxHp: 50 } },
   });
+});
+
+test('creates an Ice Witch that targets and damages the nearest enemy with a slowing projectile', () => {
+  expect(createIceWitch().classType).toBe('ice-witch');
+  const source = { x: 100, y: 100 };
+  const enemies = [
+    { id: 'far', x: 200, y: 100, hp: 50, maxHp: 50 },
+    { id: 'near', x: 130, y: 100, hp: 50, maxHp: 50 },
+  ];
+  const projectile = createIceProjectile(source, enemies);
+
+  expect(projectile.targetId).toBe('near');
+  const result = advanceIceProjectile(projectile, enemies, 0.25);
+  expect(result.hit).toEqual({ enemyId: 'near' });
+  expect(result.projectile).toBeNull();
+
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {},
+    enemies: {},
+  };
+  expect(applyIceProjectileDamage(health, enemies[1]).enemies.near.hp).toBe(
+    50 - ICE_WITCH_CONFIG.atk,
+  );
+});
+
+test('fires the Ice Witch ability every 1.5 seconds and applies the slow on impact', () => {
+  const applySlow = jest.fn();
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 400, y: 300 },
+        followers: [{ id: 'follower-0', x: 100, y: 100 }],
+      }}
+      enemies={[
+        {
+          id: 'enemy-1',
+          x: 130,
+          y: 100,
+          hp: 50,
+          maxHp: 50,
+          atk: 0,
+          radius: 10,
+        },
+      ]}
+      applySlow={applySlow}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  act(() => scheduledFrame(1500));
+
+  const combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(applySlow).toHaveBeenCalledWith('enemy-1', 3);
+  expect(combat.enemies[0].hp).toBe(45);
+  expect(combat.projectiles).toHaveLength(0);
 });

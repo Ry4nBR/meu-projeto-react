@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import { advanceEnemies, useEnemyPursuit } from './useEnemyPursuit';
 
 function EnemyHarness({ party }) {
-  const enemies = useEnemyPursuit(party);
+  const { enemies } = useEnemyPursuit(party);
   return <output aria-label="enemies">{JSON.stringify(enemies)}</output>;
 }
 
@@ -51,5 +51,29 @@ test('moves enemies toward the nearest member at constant speed', () => {
     ...enemies[0],
     x: 0,
     y: 10,
+    slowRemaining: 0,
+  });
+});
+
+test('slows enemy movement by half for the remaining slow duration', () => {
+  const enemies = [
+    { id: 'e', x: 0, y: 0, speed: 10, slowRemaining: 3 },
+  ];
+  const party = {
+    leader: { x: 100, y: 0 },
+    followers: [],
+  };
+
+  const afterOneSecond = advanceEnemies(enemies, party, 1)[0];
+  expect(afterOneSecond).toEqual({
+    ...enemies[0],
+    x: 5,
+    slowRemaining: 2,
+  });
+
+  expect(advanceEnemies([afterOneSecond], party, 3)[0]).toEqual({
+    ...enemies[0],
+    x: 25,
+    slowRemaining: 0,
   });
 });

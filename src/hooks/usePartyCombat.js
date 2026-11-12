@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react';
 import { createWarriorLeader, WARRIOR_CONFIG } from '../game/classes';
+import {
+  advanceIceProjectile,
+  createIceProjectile,
+  createIceWitch,
+  ICE_WITCH_CONFIG,
+} from '../game/iceWitch';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -118,21 +124,53 @@ function applyWarriorAttack(health, leader, enemies) {
   return nextHealth;
 }
 
-export function usePartyCombat(party, enemies, active = true) {
+function applyIceProjectileDamage(health, enemy) {
+  const enemyHealth = health.enemies[enemy.id] || {
+    hp: enemy.hp,
+    maxHp: enemy.maxHp,
+  };
+  return {
+    ...health,
+    enemies: {
+      ...health.enemies,
+      [enemy.id]: {
+        ...enemyHealth,
+        hp: Math.max(0, enemyHealth.hp - ICE_WITCH_CONFIG.atk),
+      },
+    },
+  };
+}
+
+export function usePartyCombat(
+  party,
+  enemies,
+  active = true,
+  applyEnemySlow = () => {},
+) {
   const [health, setHealth] = useState(() =>
     createInitialHealth(party.followers),
   );
+  const [projectiles, setProjectiles] = useState([]);
+  const projectilesRef = useRef([]);
   const damageTimer = useRef(0);
   const warriorTimer = useRef(0);
+  const iceWitchTimer = useRef(0);
+  const nextProjectileId = useRef(0);
 
   useGameLoop((deltaTime) => {
-    damageTimer.current += deltaTime;
-    warriorTimer.current += deltaTime;
-    const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
-    const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
-    if (!canDamage && !canAttack) {
+    if (deltaTime <= 0) {
       return;
     }
+
+    const livingEnemies = enemies.filter(
+      (enemy) => (health.enemies[enemy.id]?.hp ?? enemy.hp) > 0,
+    );
+    damageTimer.current += deltaTime;
+    warriorTimer.current += deltaTime;
+    iceWitchTimer.current += deltaTime;
+    const canDamage = damageTimer.current >= DAMAGE_INTERVAL;
+    const canAttack = warriorTimer.current >= WARRIOR_CONFIG.cooldown;
+    const canCast = iceWitchTimer.current >= ICE_WITCH_CONFIG.cooldown;
 
     if (canDamage) {
       damageTimer.current %= DAMAGE_INTERVAL;
@@ -140,19 +178,70 @@ export function usePartyCombat(party, enemies, active = true) {
     if (canAttack) {
       warriorTimer.current %= WARRIOR_CONFIG.cooldown;
     }
+    if (canCast) {
+      iceWitchTimer.current %= ICE_WITCH_CONFIG.cooldown;
+    }
 
-    setHealth((currentHealth) => {
-      let nextHealth = currentHealth;
-      if (canDamage) {
-        nextHealth = applyContactDamage(nextHealth, party, enemies);
+    if (canDamage || canAttack) {
+      setHealth((currentHealth) => {
+        let nextHealth = currentHealth;
+        if (canDamage) {
+          nextHealth = applyContactDamage(nextHealth, party, enemies);
+        }
+        if (canAttack) {
+          nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
+        }
+        return nextHealth;
+      });
+    }
+
+    let launchedProjectile = null;
+    const iceWitch = party.followers.find(
+      ({ id }) =>
+        id === 'follower-0' && health.followers[id]?.hp !== 0,
+    );
+    if (canCast && iceWitch) {
+      launchedProjectile = createIceProjectile(iceWitch, livingEnemies);
+      if (launchedProjectile) {
+        launchedProjectile.id = `ice-projectile-${nextProjectileId.current}`;
+        nextProjectileId.current += 1;
       }
-      if (canAttack) {
-        nextHealth = applyWarriorAttack(nextHealth, party.leader, enemies);
-      }
-      return nextHealth;
-    });
+    }
+
+    if (projectilesRef.current.length > 0 || launchedProjectile) {
+      const currentProjectiles = launchedProjectile
+        ? [...projectilesRef.current, launchedProjectile]
+        : projectilesRef.current;
+      const hits = [];
+      const nextProjectiles = currentProjectiles.flatMap((projectile) => {
+        const result = advanceIceProjectile(
+          projectile,
+          livingEnemies,
+          deltaTime,
+        );
+        if (result.hit) {
+          hits.push(result.hit);
+          return [];
+        }
+        return result.projectile ? [result.projectile] : [];
+      });
+
+      projectilesRef.current = nextProjectiles;
+      setProjectiles(nextProjectiles);
+
+      hits.forEach(({ enemyId }) => {
+        const enemy = livingEnemies.find(({ id }) => id === enemyId);
+        if (enemy) {
+          setHealth((currentHealth) =>
+            applyIceProjectileDamage(currentHealth, enemy),
+          );
+          applyEnemySlow(enemyId, ICE_WITCH_CONFIG.slowDuration);
+        }
+      });
+    }
   }, active);
 
+  const iceWitch = createIceWitch();
   return {
     party: {
       ...party,
@@ -164,6 +253,7 @@ export function usePartyCombat(party, enemies, active = true) {
       },
       followers: party.followers
         .map((follower) => ({
+          ...(follower.id === iceWitch.id ? iceWitch : {}),
           ...follower,
           ...(health.followers[follower.id] || {
             hp: INITIAL_HP,
@@ -183,8 +273,13 @@ export function usePartyCombat(party, enemies, active = true) {
         radius: enemy.radius || ENEMY_RADIUS,
       }))
       .filter((enemy) => enemy.hp > 0),
+    projectiles,
     isGameOver: health.leader.hp <= 0,
   };
 }
 
-export { applyContactDamage, applyWarriorAttack };
+export {
+  applyContactDamage,
+  applyIceProjectileDamage,
+  applyWarriorAttack,
+};
