@@ -9,6 +9,7 @@ beforeEach(() => {
     beginPath: jest.fn(),
     clearRect: jest.fn(),
     fill: jest.fn(),
+    fillRect: jest.fn(),
     lineTo: jest.fn(),
     moveTo: jest.fn(),
     stroke: jest.fn(),
@@ -46,5 +47,6 @@ test('renders party members on the canvas', () => {
 
   expect(canvasContext.clearRect).toHaveBeenCalledWith(0, 0, 800, 600);
   expect(canvasContext.arc).toHaveBeenCalledTimes(7);
+  expect(canvasContext.fillRect).toHaveBeenCalledTimes(14);
   expect(canvasContext.stroke).toHaveBeenCalledTimes(1);
 });

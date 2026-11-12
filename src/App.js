@@ -2,6 +2,7 @@ import './App.css';
 import { useEffect, useRef } from 'react';
 import { drawParty } from './game/renderParty';
 import { useEnemyPursuit } from './hooks/useEnemyPursuit';
+import { usePartyCombat } from './hooks/usePartyCombat';
 import { usePartyMovement } from './hooks/usePartyMovement';
 import { usePlayerDirection } from './hooks/usePlayerDirection';
 
@@ -10,6 +11,7 @@ function App() {
   const direction = usePlayerDirection();
   const party = usePartyMovement(direction);
   const enemies = useEnemyPursuit(party);
+  const combat = usePartyCombat(party, enemies);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,8 +21,8 @@ function App() {
       throw new Error('O navegador não conseguiu criar o contexto 2D do canvas.');
     }
 
-    drawParty(context, party, canvas.width, canvas.height, enemies);
-  }, [party, enemies]);
+    drawParty(context, combat.party, canvas.width, canvas.height, combat.enemies);
+  }, [combat]);
 
   return (
     <main className="App">
