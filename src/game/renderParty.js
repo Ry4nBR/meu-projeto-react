@@ -33,6 +33,7 @@ export function drawParty(
   shockwaves = [],
   skeletons = [],
   coins = [],
+  coinPickupEffects = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -134,6 +135,18 @@ export function drawParty(
     context.arc(coin.x, coin.y, 6, 0, Math.PI * 2);
     context.fill();
     context.shadowBlur = 0;
+  });
+
+  coinPickupEffects.forEach((effect) => {
+    context.globalAlpha = Math.max(
+      0,
+      Math.min(1, effect.timeRemaining / 0.35),
+    );
+    context.strokeStyle = '#fff2a8';
+    context.lineWidth = 3;
+    context.beginPath();
+    context.arc(effect.x, effect.y, 14, 0, Math.PI * 2);
+    context.stroke();
   });
   context.globalAlpha = 1;
 }

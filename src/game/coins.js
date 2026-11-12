@@ -1,4 +1,6 @@
 export const COIN_LIFETIME = 10;
+export const COIN_RADIUS = 6;
+export const PICKUP_EFFECT_DURATION = 0.35;
 
 export function createCoinDrop(enemy, random = Math.random) {
   return {
@@ -43,4 +45,27 @@ export function advanceCoinDrops(coins, deltaTime) {
       timeRemaining: coin.timeRemaining - deltaTime,
     }))
     .filter((coin) => coin.timeRemaining > 0);
+}
+
+export function collectCoinDrops(coins, party, deltaTime = 0) {
+  const members = [party.leader, ...party.followers];
+  const remaining = [];
+  const collected = [];
+  const activeCoins = advanceCoinDrops(coins, deltaTime);
+
+  activeCoins.forEach((coin) => {
+    const collector = members.find(
+      (member) =>
+        Math.hypot(member.x - coin.x, member.y - coin.y) <=
+        (member.radius || 12) + COIN_RADIUS,
+    );
+
+    if (collector) {
+      collected.push(coin);
+    } else {
+      remaining.push(coin);
+    }
+  });
+
+  return { remaining, collected };
 }

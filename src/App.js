@@ -67,6 +67,7 @@ function App() {
       combat.shockwaves,
       combat.skeletons,
       combat.coinDrops,
+      combat.coinPickupEffects,
     );
   }, [combat]);
 
@@ -83,11 +84,13 @@ function App() {
         data-leader-y={party.leader.y}
         data-follower-count={party.followers.length}
         data-enemy-count={combat.enemies.length}
+        data-coins={combat.coins}
         aria-label="Área do jogo"
       />
       <section className="game-hud" aria-label="Status do jogo">
         <span>Wave: {waveInfo.wave}</span>
         <span>Próxima onda: {waveInfo.countdown}s</span>
+        <span>Moedas: {combat.coins}</span>
       </section>
       {isGameOver && <p role="alert">Game Over</p>}
     </main>

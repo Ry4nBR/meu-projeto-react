@@ -171,3 +171,26 @@ test('draws gold coins with a glow and fading alpha', () => {
   expect(context.shadowBlur).toBe(0);
   expect(context.globalAlpha).toBe(1);
 });
+
+test('draws the pickup animation around a collected coin', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [], [], [], [
+    { x: 40, y: 50, timeRemaining: 0.2 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    14,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.strokeStyle).toBe('#fff2a8');
+});

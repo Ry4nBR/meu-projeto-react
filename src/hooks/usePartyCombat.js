@@ -20,7 +20,11 @@ import {
   NECROMANCER_CONFIG,
   SKELETON_CONFIG,
 } from '../game/necromancer';
-import { advanceCoinDrops, applyEnemyDamage } from '../game/coins';
+import {
+  applyEnemyDamage,
+  collectCoinDrops,
+  PICKUP_EFFECT_DURATION,
+} from '../game/coins';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -181,6 +185,8 @@ export function usePartyCombat(
   const [healingEffects, setHealingEffects] = useState([]);
   const [shockwaves, setShockwaves] = useState([]);
   const [skeletons, setSkeletons] = useState([]);
+  const [coins, setCoins] = useState(0);
+  const [coinPickupEffects, setCoinPickupEffects] = useState([]);
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
   const skeletonsRef = useRef([]);
@@ -194,22 +200,51 @@ export function usePartyCombat(
   const nextHealingEffectId = useRef(0);
   const nextShockwaveId = useRef(0);
   const nextSkeletonId = useRef(0);
+  const nextCoinEffectId = useRef(0);
 
   useGameLoop((deltaTime) => {
     if (deltaTime <= 0) {
       return;
     }
 
-    setHealth((currentHealth) => {
-      if (!currentHealth.coinDrops?.length) {
-        return currentHealth;
-      }
-
-      return {
+    const collection = collectCoinDrops(
+      health.coinDrops || [],
+      { leader: party.leader, followers: party.followers },
+      deltaTime,
+    );
+    if (health.coinDrops?.length) {
+      setHealth((currentHealth) => ({
         ...currentHealth,
-        coinDrops: advanceCoinDrops(currentHealth.coinDrops, deltaTime),
-      };
-    });
+        coinDrops: collection.remaining,
+      }));
+    }
+
+    if (collection.collected.length > 0) {
+      setCoins((currentCoins) =>
+        currentCoins +
+        collection.collected.reduce((total, coin) => total + coin.value, 0),
+      );
+      setCoinPickupEffects((currentEffects) => [
+        ...currentEffects,
+        ...collection.collected.map((coin) => ({
+          id: `pickup-${nextCoinEffectId.current++}`,
+          x: coin.x,
+          y: coin.y,
+          timeRemaining: PICKUP_EFFECT_DURATION,
+        })),
+      ]);
+    }
+
+    if (coinPickupEffects.length > 0) {
+      setCoinPickupEffects((currentEffects) =>
+        currentEffects
+          .map((effect) => ({
+            ...effect,
+            timeRemaining: effect.timeRemaining - deltaTime,
+          }))
+          .filter((effect) => effect.timeRemaining > 0),
+      );
+    }
 
     const livingEnemies = enemies.filter(
       (enemy) => (health.enemies[enemy.id]?.hp ?? enemy.hp) > 0,
@@ -483,6 +518,8 @@ export function usePartyCombat(
     healingEffects,
     shockwaves,
     coinDrops: health.coinDrops || [],
+    coins,
+    coinPickupEffects,
     skeletons: skeletons
       .map((skeleton) => ({
         ...skeleton,

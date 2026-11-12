@@ -389,3 +389,36 @@ test('an ability kill produces a coin drop at the enemy position', () => {
   expect(result.coinDrops[0].value).toBeGreaterThanOrEqual(1);
   expect(result.coinDrops[0].value).toBeLessThanOrEqual(5);
 });
+
+test('collects dropped coins, updates the wallet, and emits a pickup effect', () => {
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 400, y: 300 },
+        followers: [],
+      }}
+      enemies={[
+        {
+          id: 'coin-pickup-test',
+          x: 418,
+          y: 300,
+          hp: 10,
+          maxHp: 10,
+          atk: 0,
+          radius: 10,
+        },
+      ]}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  act(() => scheduledFrame(500));
+  act(() => scheduledFrame(1000));
+  act(() => scheduledFrame(1500));
+
+  const combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.coinDrops).toHaveLength(0);
+  expect(combat.coins).toBeGreaterThanOrEqual(1);
+  expect(combat.coins).toBeLessThanOrEqual(5);
+  expect(combat.coinPickupEffects.length).toBeGreaterThan(0);
+});

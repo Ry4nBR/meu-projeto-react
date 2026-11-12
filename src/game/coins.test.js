@@ -2,6 +2,7 @@ import {
   advanceCoinDrops,
   applyEnemyDamage,
   COIN_LIFETIME,
+  collectCoinDrops,
   createCoinDrop,
 } from './coins';
 
@@ -38,4 +39,24 @@ test('removes coins after ten seconds', () => {
     { id: 'coin-1', value: 2, timeRemaining: 9 },
   ]);
   expect(advanceCoinDrops(coins, 10)).toEqual([]);
+});
+
+test('collects coins when a party member overlaps them', () => {
+  const coins = [
+    { id: 'coin-1', x: 10, y: 10, value: 3, timeRemaining: 5 },
+    { id: 'coin-2', x: 100, y: 100, value: 2, timeRemaining: 5 },
+  ];
+  const result = collectCoinDrops(
+    coins,
+    {
+      leader: { x: 0, y: 10, radius: 12 },
+      followers: [],
+    },
+    0.1,
+  );
+
+  expect(result.collected).toHaveLength(1);
+  expect(result.collected[0].id).toBe('coin-1');
+  expect(result.remaining[0].id).toBe('coin-2');
+  expect(result.remaining[0].timeRemaining).toBeCloseTo(4.9);
 });
