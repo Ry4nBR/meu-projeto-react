@@ -20,6 +20,7 @@ import {
   NECROMANCER_CONFIG,
   SKELETON_CONFIG,
 } from '../game/necromancer';
+import { advanceCoinDrops, applyEnemyDamage } from '../game/coins';
 import { checkCollision } from '../game/physics';
 import { useGameLoop } from './useGameLoop';
 
@@ -38,6 +39,7 @@ function createInitialHealth(followers) {
     ),
     enemies: {},
     skeletons: {},
+    coinDrops: [],
   };
 }
 
@@ -79,6 +81,7 @@ function applyContactDamage(health, party, enemies) {
       ) {
         if (nextHealth === health) {
           nextHealth = {
+            ...health,
             leader: { ...health.leader },
             followers: Object.fromEntries(
               Object.entries(health.followers).map(([id, follower]) => [
@@ -139,72 +142,29 @@ function applyWarriorAttack(health, leader, enemies) {
     }
 
     if (nextHealth === health) {
-      nextHealth = {
-        ...health,
-        leader: { ...health.leader },
-        followers: { ...health.followers },
-        enemies: { ...health.enemies },
-      };
+      nextHealth = { ...health, enemies: { ...health.enemies } };
     }
 
-    nextHealth.enemies[enemy.id] = {
-      ...enemyHealth,
-      hp: Math.max(0, enemyHealth.hp - WARRIOR_CONFIG.atk),
-    };
+    nextHealth = applyEnemyDamage(
+      nextHealth,
+      enemy,
+      WARRIOR_CONFIG.atk,
+    );
   });
 
   return nextHealth;
 }
 
 function applyIceProjectileDamage(health, enemy) {
-  const enemyHealth = health.enemies[enemy.id] || {
-    hp: enemy.hp,
-    maxHp: enemy.maxHp,
-  };
-  return {
-    ...health,
-    enemies: {
-      ...health.enemies,
-      [enemy.id]: {
-        ...enemyHealth,
-        hp: Math.max(0, enemyHealth.hp - ICE_WITCH_CONFIG.atk),
-      },
-    },
-  };
+  return applyEnemyDamage(health, enemy, ICE_WITCH_CONFIG.atk);
 }
 
 function applyWindShockwaveDamage(health, enemy) {
-  const enemyHealth = health.enemies[enemy.id] || {
-    hp: enemy.hp,
-    maxHp: enemy.maxHp,
-  };
-  return {
-    ...health,
-    enemies: {
-      ...health.enemies,
-      [enemy.id]: {
-        ...enemyHealth,
-        hp: Math.max(0, enemyHealth.hp - WIND_MAGE_CONFIG.atk),
-      },
-    },
-  };
+  return applyEnemyDamage(health, enemy, WIND_MAGE_CONFIG.atk);
 }
 
 function applySkeletonDamage(health, enemyId, damage) {
-  const skeletonHealth = health.enemies[enemyId] || {
-    hp: 0,
-    maxHp: 0,
-  };
-  return {
-    ...health,
-    enemies: {
-      ...health.enemies,
-      [enemyId]: {
-        ...skeletonHealth,
-        hp: Math.max(0, skeletonHealth.hp - damage),
-      },
-    },
-  };
+  return applyEnemyDamage(health, enemyId, damage);
 }
 
 export function usePartyCombat(
@@ -239,6 +199,17 @@ export function usePartyCombat(
     if (deltaTime <= 0) {
       return;
     }
+
+    setHealth((currentHealth) => {
+      if (!currentHealth.coinDrops?.length) {
+        return currentHealth;
+      }
+
+      return {
+        ...currentHealth,
+        coinDrops: advanceCoinDrops(currentHealth.coinDrops, deltaTime),
+      };
+    });
 
     const livingEnemies = enemies.filter(
       (enemy) => (health.enemies[enemy.id]?.hp ?? enemy.hp) > 0,
@@ -292,7 +263,7 @@ export function usePartyCombat(
         setHealth((currentHealth) =>
           applySkeletonDamage(
             currentHealth,
-            enemyId,
+            enemies.find(({ id }) => id === enemyId),
             skeleton.atk,
           ),
         );
@@ -511,6 +482,7 @@ export function usePartyCombat(
     projectiles,
     healingEffects,
     shockwaves,
+    coinDrops: health.coinDrops || [],
     skeletons: skeletons
       .map((skeleton) => ({
         ...skeleton,

@@ -146,3 +146,28 @@ test('renders autonomous skeleton minions with their own health bar', () => {
   );
   expect(context.fillRect).toHaveBeenCalledTimes(2);
 });
+
+test('draws gold coins with a glow and fading alpha', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [], [], [
+    { x: 40, y: 50, timeRemaining: 5, value: 3 },
+  ]);
+
+  expect(context.arc).toHaveBeenNthCalledWith(
+    2,
+    40,
+    50,
+    6,
+    0,
+    Math.PI * 2,
+  );
+  expect(context.fillStyle).toBe('#ffd700');
+  expect(context.shadowBlur).toBe(0);
+  expect(context.globalAlpha).toBe(1);
+});

@@ -66,6 +66,7 @@ function App() {
       combat.healingEffects,
       combat.shockwaves,
       combat.skeletons,
+      combat.coinDrops,
     );
   }, [combat]);
 

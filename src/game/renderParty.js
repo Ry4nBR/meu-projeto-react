@@ -32,6 +32,7 @@ export function drawParty(
   healingEffects = [],
   shockwaves = [],
   skeletons = [],
+  coins = [],
 ) {
   context.clearRect(0, 0, width, height);
 
@@ -122,6 +123,17 @@ export function drawParty(
     );
     context.fill();
     drawHealthBar(context, skeleton, skeleton.radius || 7);
+  });
+
+  coins.forEach((coin) => {
+    context.globalAlpha = Math.max(0, Math.min(1, coin.timeRemaining / 10));
+    context.fillStyle = '#ffd700';
+    context.shadowColor = '#ffec8b';
+    context.shadowBlur = 12;
+    context.beginPath();
+    context.arc(coin.x, coin.y, 6, 0, Math.PI * 2);
+    context.fill();
+    context.shadowBlur = 0;
   });
   context.globalAlpha = 1;
 }

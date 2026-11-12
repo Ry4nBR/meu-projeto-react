@@ -363,3 +363,29 @@ test('enemy contact can defeat an individual skeleton', () => {
 
   expect(result.skeletons['skeleton-1'].hp).toBe(0);
 });
+
+test('an ability kill produces a coin drop at the enemy position', () => {
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {},
+    enemies: {},
+    coinDrops: [],
+  };
+  const result = applyIceProjectileDamage(health, {
+    id: 'enemy-coin-test',
+    x: 25,
+    y: 40,
+    hp: 5,
+    maxHp: 5,
+  });
+
+  expect(result.coinDrops).toHaveLength(1);
+  expect(result.coinDrops[0]).toMatchObject({
+    x: 25,
+    y: 40,
+    value: expect.any(Number),
+    timeRemaining: 10,
+  });
+  expect(result.coinDrops[0].value).toBeGreaterThanOrEqual(1);
+  expect(result.coinDrops[0].value).toBeLessThanOrEqual(5);
+});
