@@ -27,3 +27,19 @@ export function advanceParticles(particles, deltaTime) {
     }))
     .filter((particle) => particle.timeRemaining > 0);
 }
+
+export function createIceShatterParticles(idPrefix, x, y, random = Math.random) {
+  return createParticleBurst(idPrefix, x, y, '#9be7ff', random);
+}
+
+export function createHealLeafParticles(idPrefix, x, y, random = Math.random) {
+  return createParticleBurst(idPrefix, x, y, '#38ef7d', random);
+}
+
+export function createWindRingParticles(idPrefix, x, y, random = Math.random) {
+  return createParticleBurst(idPrefix, x, y, '#b7f7ff', random);
+}
+
+export function createSummonSmokeParticles(idPrefix, x, y, random = Math.random) {
+  return createParticleBurst(idPrefix, x, y, '#d8c6ff', random);
+}

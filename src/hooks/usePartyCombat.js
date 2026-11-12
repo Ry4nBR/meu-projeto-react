@@ -27,6 +27,7 @@ import {
 } from '../game/coins';
 import { checkCollision } from '../game/physics';
 import { advanceParticles, createParticleBurst } from '../game/particles';
+import { advanceFloatingTexts, createFloatingText } from '../game/floatingText';
 import { useGameLoop } from './useGameLoop';
 
 const INITIAL_HP = 100;
@@ -257,6 +258,7 @@ export function usePartyCombat(
   const [coinsCollected, setCoinsCollected] = useState(0);
   const [coinPickupEffects, setCoinPickupEffects] = useState([]);
   const [particles, setParticles] = useState([]);
+  const [floatingTexts, setFloatingTexts] = useState([]);
   const [hitEffects, setHitEffects] = useState({});
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
@@ -273,6 +275,7 @@ export function usePartyCombat(
   const nextSkeletonId = useRef(0);
   const nextCoinEffectId = useRef(0);
   const nextParticleBurstId = useRef(0);
+  const nextFloatingTextId = useRef(0);
   const emitParticles = (x, y, color) => {
     const burst = createParticleBurst(
       `particle-${nextParticleBurstId.current}`,
@@ -282,6 +285,16 @@ export function usePartyCombat(
     );
     nextParticleBurstId.current += 1;
     setParticles((currentParticles) => [...currentParticles, ...burst]);
+  };
+  const emitFloatingText = (x, y, text, color) => {
+    const entry = createFloatingText(
+      `float-${nextFloatingTextId.current++}`,
+      x,
+      y,
+      text,
+      color,
+    );
+    setFloatingTexts((current) => [...current, entry]);
   };
 
   const spendCoins = useCallback(
@@ -309,6 +322,9 @@ export function usePartyCombat(
       setParticles((currentParticles) =>
         advanceParticles(currentParticles, deltaTime),
       );
+    }
+    if (floatingTexts.length > 0) {
+      setFloatingTexts((current) => advanceFloatingTexts(current, deltaTime));
     }
     if (Object.keys(hitEffects).length > 0) {
       setHitEffects((currentEffects) =>
@@ -437,6 +453,7 @@ export function usePartyCombat(
         const enemy = enemies.find(({ id }) => id === enemyId);
         if (enemy) {
           emitParticles(enemy.x, enemy.y, '#d8c6ff');
+          emitFloatingText(enemy.x, enemy.y - 10, `-${skeleton.atk}`, '#d8c6ff');
         }
         setHealth((currentHealth) =>
           applySkeletonDamage(
@@ -464,7 +481,10 @@ export function usePartyCombat(
         .filter(
           (enemy) => isInMeleeArc(party.leader, party.direction, enemy),
         )
-        .forEach((enemy) => emitParticles(enemy.x, enemy.y, '#ffd700'));
+        .forEach((enemy) => {
+          emitParticles(enemy.x, enemy.y, '#ffd700');
+          emitFloatingText(enemy.x, enemy.y - 10, `-${WARRIOR_CONFIG.atk}`, '#ffd700');
+        });
     }
     if (canCast) {
       iceWitchTimer.current %= ICE_WITCH_CONFIG.cooldown;
@@ -539,6 +559,7 @@ export function usePartyCombat(
       const { target } = healMostWounded(health, party);
       if (target) {
         emitParticles(target.x, target.y, '#38ef7d');
+        emitFloatingText(target.x, target.y - 12, `+${DRUID_CONFIG.healAmount}`, '#38ef7d');
         setHealingEffects((currentEffects) => [
           ...currentEffects,
           {
@@ -588,6 +609,7 @@ export function usePartyCombat(
         const enemy = livingEnemies.find(({ id }) => id === enemyId);
         if (enemy) {
           emitParticles(enemy.x, enemy.y, '#b7f7ff');
+          emitFloatingText(enemy.x, enemy.y - 10, `-${WIND_MAGE_CONFIG.atk}`, '#b7f7ff');
           setHealth((currentHealth) =>
             applyWindShockwaveDamage(currentHealth, enemy),
           );
@@ -635,6 +657,7 @@ export function usePartyCombat(
         const enemy = livingEnemies.find(({ id }) => id === enemyId);
         if (enemy) {
           emitParticles(enemy.x, enemy.y, '#9be7ff');
+          emitFloatingText(enemy.x, enemy.y - 10, `-${ICE_WITCH_CONFIG.atk}`, '#9be7ff');
           setHealth((currentHealth) =>
             applyIceProjectileDamage(currentHealth, enemy),
           );
@@ -698,6 +721,7 @@ export function usePartyCombat(
     spendCoins,
     coinPickupEffects,
     particles,
+    floatingTexts,
     hitEffects,
     skeletons: skeletons
       .map((skeleton) => ({

@@ -10,6 +10,66 @@ const DIRECTION_LENGTH = 24;
 const HEALTH_BAR_WIDTH = 28;
 const HEALTH_BAR_HEIGHT = 4;
 
+function drawLeaderCrown(context, x, y, radius) {
+  context.fillStyle = '#fff2a8';
+  context.fillRect(x - 6, y - radius - 3, 12, 2);
+  context.fillRect(x - 6, y - radius - 6, 3, 3);
+  context.fillRect(x - 1, y - radius - 7, 3, 4);
+  context.fillRect(x + 3, y - radius - 6, 3, 3);
+  context.fillStyle = '#ff4d4f';
+  context.fillRect(x, y - radius - 2, 2, 2);
+}
+
+function drawFollowerAccessories(context, follower, radius) {
+  const x = follower.x;
+  const y = follower.y;
+  switch (follower.classType) {
+    case 'warrior':
+      context.fillStyle = '#e8e8e8';
+      context.fillRect(x - 5, y - 2, 10, 3);
+      context.fillStyle = '#1f1f1f';
+      context.fillRect(x - 4, y - 1, 8, 1);
+      break;
+    case 'ice-witch':
+      context.fillStyle = '#2c2c54';
+      context.fillRect(x - 7, y - radius, 14, 2);
+      context.fillRect(x - 4, y - radius - 4, 8, 4);
+      context.fillRect(x - 2, y - radius - 7, 4, 3);
+      context.fillStyle = '#706fd3';
+      context.fillRect(x - 4, y - radius - 1, 8, 1);
+      break;
+    case 'druid':
+      context.fillStyle = '#8b5a2b';
+      context.fillRect(x + radius - 2, y - radius, 2, radius * 2);
+      context.fillStyle = '#52c41a';
+      context.fillRect(x + radius - 3, y - radius - 2, 4, 3);
+      break;
+    case 'wind-mage':
+      context.fillStyle = '#40a9ff';
+      context.fillRect(x - 5, y - radius - 2, 10, 2);
+      context.fillStyle = '#bae7ff';
+      context.fillRect(x + radius - 2, y - radius - 2, 3, 3);
+      break;
+    case 'necromancer':
+      context.fillStyle = '#391085';
+      context.fillRect(x - 6, y - radius - 2, 12, 3);
+      context.fillStyle = '#9254de';
+      context.fillRect(x - 1, y - 1, 2, 2);
+      break;
+    default:
+      break;
+  }
+}
+
+function drawSkeletonDetails(context, skeleton) {
+  const x = skeleton.x;
+  const y = skeleton.y;
+  context.fillStyle = '#141414';
+  context.fillRect(x - 3, y - 1, 2, 2);
+  context.fillRect(x + 1, y - 1, 2, 2);
+  context.fillRect(x, y + 2, 1, 1);
+}
+
 function drawHealthBar(context, entity, radius) {
   if (typeof entity.hp !== 'number' || typeof entity.maxHp !== 'number') {
     return;
@@ -39,6 +99,7 @@ export function drawParty(
   coinPickupEffects = [],
   recruits = [],
   particles = [],
+  floatingTexts = [],
 ) {
   context.clearRect(0, 0, width, height);
   drawArenaBorder(context, width, height);
@@ -70,6 +131,7 @@ export function drawParty(
     context.arc(follower.x, follower.y, FOLLOWER_RADIUS, 0, Math.PI * 2);
     context.fill();
     context.shadowBlur = 0;
+    drawFollowerAccessories(context, follower, follower.radius || FOLLOWER_RADIUS);
     drawHealthBar(context, follower, follower.radius || FOLLOWER_RADIUS);
   });
 
@@ -88,7 +150,9 @@ export function drawParty(
     Math.PI * 2,
   );
   context.fill();
+  drawLeaderCrown(context, party.leader.x, party.leader.y, LEADER_RADIUS);
   drawHealthBar(context, party.leader, LEADER_RADIUS);
+  context.fillStyle = LEADER_COLOR;
 
   context.strokeStyle = LEADER_COLOR;
   context.lineWidth = 3;
@@ -161,6 +225,7 @@ export function drawParty(
       Math.PI * 2,
     );
     context.fill();
+    drawSkeletonDetails(context, skeleton);
     drawHealthBar(context, skeleton, skeleton.radius || 7);
   });
 
@@ -217,6 +282,14 @@ export function drawParty(
     context.beginPath();
     context.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
     context.fill();
+  });
+
+  floatingTexts.forEach((text) => {
+    context.globalAlpha = Math.max(0, Math.min(1, text.timeRemaining / 0.8));
+    context.fillStyle = text.color || '#ff4d4f';
+    context.font = 'bold 12px sans-serif';
+    context.textAlign = 'center';
+    context.fillText(text.text, text.x, text.y);
   });
   context.globalAlpha = 1;
 }

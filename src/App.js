@@ -180,6 +180,7 @@ function GameSession({ onRestart }) {
       combat.coinPickupEffects,
       recruits,
       combat.particles,
+      combat.floatingTexts,
     );
   }, [combat, recruits]);
 

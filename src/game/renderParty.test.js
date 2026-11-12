@@ -253,3 +253,50 @@ test('blinks a character while its recent hit effect is active', () => {
   expect(context.globalAlpha).toBe(1);
   expect(context.fill).toHaveBeenCalled();
 });
+
+test('draws floating combat text with fillText', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(
+    context,
+    party,
+    800,
+    600,
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [{ id: 't1', x: 100, y: 80, text: '-25', color: '#ff4d4f', timeRemaining: 0.5 }],
+  );
+
+  expect(context.fillText).toHaveBeenCalledWith('-25', 100, 80);
+});
+
+test('draws leader crown and chibi accessories on followers and skeletons', () => {
+  const context = createContext();
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [
+      { id: 'f1', x: 80, y: 120, classType: 'warrior' },
+      { id: 'f2', x: 60, y: 120, classType: 'ice-witch' },
+      { id: 'f3', x: 40, y: 120, classType: 'druid' },
+    ],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party, 800, 600, [], [], [], [], [
+    { id: 'sk-1', x: 20, y: 120, hp: 50, maxHp: 80, radius: 7 },
+  ]);
+
+  expect(context.fillRect).toHaveBeenCalled();
+});
