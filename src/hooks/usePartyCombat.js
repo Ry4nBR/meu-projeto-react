@@ -58,6 +58,45 @@ function createInitialHealth(followers) {
   };
 }
 
+export function getContactDamageTargets(health, party, enemies) {
+  const members = [
+    { ...party.leader, ...health.leader, radius: LEADER_RADIUS, id: 'leader' },
+    ...party.followers.map((follower) => ({
+      ...follower,
+      ...(health.followers[follower.id] || getFollowerHealth(follower)),
+      radius: FOLLOWER_RADIUS,
+      id: follower.id,
+    })),
+    ...(party.skeletons || []).map((skeleton) => ({
+      ...skeleton,
+      ...(health.skeletons?.[skeleton.id] || skeleton),
+      radius: SKELETON_CONFIG.radius,
+      id: `skeleton:${skeleton.id}`,
+    })),
+  ];
+  const targets = new Set();
+
+  enemies.forEach((enemy) => {
+    if ((health.enemies?.[enemy.id]?.hp ?? enemy.hp) <= 0) {
+      return;
+    }
+
+    members.forEach((member) => {
+      if (
+        member.hp > 0 &&
+        checkCollision(
+          { ...member, radius: member.radius },
+          { ...enemy, radius: enemy.radius || ENEMY_RADIUS },
+        )
+      ) {
+        targets.add(member.id);
+      }
+    });
+  });
+
+  return [...targets];
+}
+
 function applyContactDamage(health, party, enemies) {
   const members = [
     { ...party.leader, ...health.leader, radius: LEADER_RADIUS, id: 'leader' },
@@ -218,6 +257,7 @@ export function usePartyCombat(
   const [coinsCollected, setCoinsCollected] = useState(0);
   const [coinPickupEffects, setCoinPickupEffects] = useState([]);
   const [particles, setParticles] = useState([]);
+  const [hitEffects, setHitEffects] = useState({});
   const projectilesRef = useRef([]);
   const shockwavesRef = useRef([]);
   const skeletonsRef = useRef([]);
@@ -268,6 +308,18 @@ export function usePartyCombat(
     if (particles.length > 0) {
       setParticles((currentParticles) =>
         advanceParticles(currentParticles, deltaTime),
+      );
+    }
+    if (Object.keys(hitEffects).length > 0) {
+      setHitEffects((currentEffects) =>
+        Object.fromEntries(
+          Object.entries(currentEffects)
+            .map(([id, timeRemaining]) => [
+              id,
+              Math.max(0, timeRemaining - deltaTime),
+            ])
+            .filter(([, timeRemaining]) => timeRemaining > 0),
+        ),
       );
     }
 
@@ -440,6 +492,20 @@ export function usePartyCombat(
     });
 
     if (canDamage || canAttack || canHeal) {
+      if (canDamage) {
+        const damagedIds = getContactDamageTargets(
+          health,
+          skeletonParty,
+          enemies,
+        );
+        if (damagedIds.length > 0) {
+          setHitEffects((currentEffects) => ({
+            ...currentEffects,
+            ...Object.fromEntries(damagedIds.map((id) => [id, 0.3])),
+          }));
+        }
+      }
+
       setHealth((currentHealth) => {
         let nextHealth = currentHealth;
         if (canDamage) {
@@ -591,6 +657,7 @@ export function usePartyCombat(
         ...createWarriorLeader(),
         ...party.leader,
         ...health.leader,
+        hitRemaining: hitEffects.leader || 0,
         radius: LEADER_RADIUS,
       },
       followers: party.followers
@@ -603,6 +670,7 @@ export function usePartyCombat(
           ...(health.followers[follower.id] || {
             ...getFollowerHealth(follower),
           }),
+          hitRemaining: hitEffects[follower.id] || 0,
           radius:
             follower.classType === 'golden-paladin'
               ? follower.radius
@@ -631,9 +699,11 @@ export function usePartyCombat(
     spendCoins,
     coinPickupEffects,
     particles,
+    hitEffects,
     skeletons: skeletons
       .map((skeleton) => ({
         ...skeleton,
+        hitRemaining: hitEffects[`skeleton:${skeleton.id}`] || 0,
         ...(health.skeletons?.[skeleton.id] || {
           hp: skeleton.hp,
           maxHp: skeleton.maxHp,

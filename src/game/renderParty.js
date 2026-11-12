@@ -58,6 +58,11 @@ export function drawParty(
       context.shadowColor = '#fff2a8';
       context.shadowBlur = 18;
     }
+    context.globalAlpha =
+      follower.hitRemaining > 0 &&
+      Math.floor(follower.hitRemaining * 20) % 2 === 0
+        ? 0.35
+        : 1;
     context.fillStyle = follower.color || FOLLOWER_COLOR;
     context.beginPath();
     context.arc(follower.x, follower.y, FOLLOWER_RADIUS, 0, Math.PI * 2);
@@ -66,6 +71,11 @@ export function drawParty(
     drawHealthBar(context, follower, follower.radius || FOLLOWER_RADIUS);
   });
 
+  context.globalAlpha =
+    party.leader.hitRemaining > 0 &&
+    Math.floor(party.leader.hitRemaining * 20) % 2 === 0
+      ? 0.35
+      : 1;
   context.fillStyle = LEADER_COLOR;
   context.beginPath();
   context.arc(
@@ -134,6 +144,11 @@ export function drawParty(
   });
 
   skeletons.forEach((skeleton) => {
+    context.globalAlpha =
+      skeleton.hitRemaining > 0 &&
+      Math.floor(skeleton.hitRemaining * 20) % 2 === 0
+        ? 0.35
+        : 1;
     context.fillStyle = '#d8c6ff';
     context.beginPath();
     context.arc(

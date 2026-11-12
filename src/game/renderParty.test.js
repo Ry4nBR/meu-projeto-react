@@ -218,3 +218,27 @@ test('draws fading impact particles on the canvas', () => {
   expect(context.fillStyle).toBe('#ff7772');
   expect(context.globalAlpha).toBe(1);
 });
+
+test('blinks a character while its recent hit effect is active', () => {
+  const context = createContext();
+  const alphaValues = [];
+  let globalAlpha = 1;
+  Object.defineProperty(context, 'globalAlpha', {
+    get: () => globalAlpha,
+    set: (value) => {
+      globalAlpha = value;
+      alphaValues.push(value);
+    },
+  });
+  const party = {
+    leader: { x: 100, y: 120 },
+    followers: [{ id: 'hit', x: 80, y: 120, hitRemaining: 0.2 }],
+    direction: { x: 1, y: 0 },
+  };
+
+  drawParty(context, party);
+
+  expect(alphaValues).toContain(0.35);
+  expect(context.globalAlpha).toBe(1);
+  expect(context.fill).toHaveBeenCalled();
+});

@@ -2,6 +2,7 @@ import { act, render, screen } from '@testing-library/react';
 import {
   applyGoldenPaladinAura,
   applyContactDamage,
+  getContactDamageTargets,
   applyIceProjectileDamage,
   applyWarriorAttack,
   applyWindShockwaveDamage,
@@ -63,6 +64,32 @@ test('applies enemy contact damage to the colliding member', () => {
   });
 });
 
+test('identifies only living party members currently colliding with enemies', () => {
+  const party = {
+    leader: { x: 100, y: 100 },
+    followers: [
+      { id: 'hit-follower', x: 200, y: 200, hp: 100, maxHp: 100 },
+      { id: 'safe-follower', x: 400, y: 400, hp: 100, maxHp: 100 },
+      { id: 'dead-follower', x: 300, y: 300, hp: 0, maxHp: 100 },
+    ],
+  };
+  const health = {
+    leader: { hp: 200, maxHp: 200 },
+    followers: {
+      'hit-follower': { hp: 100, maxHp: 100 },
+      'safe-follower': { hp: 100, maxHp: 100 },
+      'dead-follower': { hp: 0, maxHp: 100 },
+    },
+    enemies: {},
+  };
+
+  expect(
+    getContactDamageTargets(health, party, [
+      { id: 'enemy', x: 200, y: 200, hp: 50, atk: 10, radius: 10 },
+    ]),
+  ).toEqual(['hit-follower']);
+});
+
 test('deals contact damage on the half-second interval and exposes health for rendering', () => {
   render(
     <CombatHarness
@@ -89,6 +116,36 @@ test('deals contact damage on the half-second interval and exposes health for re
   expect(combat.party.leader.maxHp).toBe(200);
   expect(combat.party.leader.classType).toBe('warrior');
   expect(combat.enemies[0].radius).toBe(10);
+});
+
+test('keeps a damaged follower in the party while its health remains above zero', () => {
+  render(
+    <CombatHarness
+      party={{
+        leader: { x: 400, y: 300 },
+        followers: [{ id: 'follower-0', x: 100, y: 100 }],
+      }}
+      enemies={[
+        {
+          id: 'attacker',
+          x: 100,
+          y: 100,
+          hp: 50,
+          maxHp: 50,
+          atk: 10,
+          radius: 10,
+        },
+      ]}
+    />,
+  );
+
+  act(() => scheduledFrame(0));
+  act(() => scheduledFrame(500));
+
+  const combat = JSON.parse(screen.getByLabelText('combat').textContent);
+  expect(combat.party.followers).toHaveLength(1);
+  expect(combat.party.followers[0].hp).toBe(90);
+  expect(combat.party.followers[0].hitRemaining).toBeGreaterThan(0);
 });
 
 test('removes a defeated follower and marks the game over when the leader dies', () => {
